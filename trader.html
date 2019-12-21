@@ -8,12 +8,59 @@
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-    <header></header>
+    <header>
+        <section class="top-bar">
+            <h2>Top Bar</h2>
+        </section>
+        <section class="menu-bar">
+            <div class="logo">Logo</div>
+            <div class="menu">Menu</div>
+        </section>
+    </header>
     <main id='main-app'>
-        <div id="orders"></div>
-        <div id="positions"></div>
+        <section id="left-sidebar">
+            <div class="sentiments">
+                <h2>Market Sentiments Section</h2>
+            </div>
+            <div class="strategies">
+                <h2>Strategies Section</h2>
+            </div>
+        </section>
+        <section id="main">
+            <div class="account">
+                <h2>Account Section</h2>
+            </div>
+            <div class="equity-numbers">
+                <p>Equity: $<span class="equity">100,000</span></p>
+                <p>Buying Power: $<span class="buying-power">400,000</span></p>
+            </div>
+            <div class="equity-chart">
+                <p>Chart goes here</p>
+            </div>
+            <div class="positions">
+                <h2>Positions Section</h2>
+            </div>
+            <div class="orders">
+                <h2>Orders Section</h2>
+            </div>
+        </section>
+        <section id="right-sidebar">
+            <div class="watchlist">
+                <h2>Watchlist Section</h2>
+            </div>
+            <div class="buttons">
+                <h2>Buttons Section</h2>
+            </div>
+        </section>
     </main>
-    <footer></footer>
+    <section id="bottom">
+        <div class="upload">
+            <h2>CSV Upload Section</h2>
+        </div>
+    </section>
+    <footer>
+        <h2>Footer</h2>
+    </footer>
     <script
         src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
         integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8="

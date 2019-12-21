@@ -1,0 +1,33 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    color: white;
+    background-color: #333333;
+}
+
+main, .menu-bar {
+    display: flex;
+}
+
+section {
+    padding: 10px 10px;
+}
+
+#left-sidebar{
+    border: 1px solid white;
+    padding-right: 10%;
+}
+
+#main {
+    padding-right: 10%;
+    border: 1px solid white;
+}
+
+#right-sidebar{
+    border: 1px solid white;
+}
+

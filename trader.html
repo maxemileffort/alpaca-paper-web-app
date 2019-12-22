@@ -21,15 +21,21 @@
         <section id="left-sidebar">
             <div class="sentiments">
                 <h2>Market Sentiments Section</h2>
+                <p class="report">Bull, bull, bull!</p>
+                <p class="report">Bear, bear, bear!</p>
+                <a href="#">Load More...</a>
             </div>
             <div class="strategies">
                 <h2>Strategies Section</h2>
+                <form id="strategies" action="#">
+                    <label for="aggressive-strat"><input type="radio" name="trading-strats" id="aggressive-strat">  Aggressive Trading Strategy</label>
+                    <label for="moderate-strat"><input type="radio" name="trading-strats" id="moderate-strat">  Moderate Trading Strategy</label>  
+                    <label for="safe-strat"><input type="radio" name="trading-strats" id="safe-strat">  Safe Trading Strategy</label>
+                </form>
             </div>
         </section>
-        <section id="main">
-            <div class="account">
-                <h2>Account Section</h2>
-            </div>
+        <section id="account">
+            <h2>Account Section</h2>
             <div class="equity-numbers">
                 <p>Equity: $<span class="equity">100,000</span></p>
                 <p>Buying Power: $<span class="buying-power">400,000</span></p>
@@ -39,9 +45,49 @@
             </div>
             <div class="positions">
                 <h2>Positions Section</h2>
+                <ul class="positions-list">
+                    <li class="column-headers">
+                        <p>Symbol</p>
+                        <p>Profit/Loss</p>
+                        <p>Shares</p>
+                        <p>Sell</p>
+                    </li>
+                    <li class="position">
+                        <span class="position-symbol">F</span>
+                        <span class="position-pl">0.5</span>
+                        <span class="position-shares">10</span>
+                        <span class="position-cancel">X</span>
+                    </li>
+                    <li class="position">
+                        <span class="position-symbol">S</span>
+                        <span class="position-pl">23.5</span>
+                        <span class="position-shares">20</span>
+                        <span class="position-cancel">X</span>
+                    </li>
+                </ul>
             </div>
             <div class="orders">
                 <h2>Orders Section</h2>
+                <ul class="orders-list">
+                    <li class="column-headers">
+                        <p>Symbol</p>
+                        <p>Price</p>
+                        <p>Shares</p>
+                        <p>Cancel</p>
+                    </li>
+                    <li class="order">
+                        <span class="order-symbol">F</span>
+                        <span class="order-price">6.7</span>
+                        <span class="order-shares">10</span>
+                        <span class="order-cancel">X</span>
+                    </li>
+                    <li class="order">
+                        <span class="order-symbol">S</span>
+                        <span class="order-price">4.6</span>
+                        <span class="order-shares">20</span>
+                        <span class="order-cancel">X</span>
+                    </li>
+                </ul>
             </div>
         </section>
         <section id="right-sidebar">
@@ -50,6 +96,8 @@
             </div>
             <div class="buttons">
                 <h2>Buttons Section</h2>
+                <button class="sell-all-positions">Sell All Positions</button>
+                <button class="cancel-all-orders">Cancel All Orders</button>
             </div>
         </section>
     </main>

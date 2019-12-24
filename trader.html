@@ -4,17 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Alpaca Trader</title>
+    <title>Show Me the Money</title>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
     <header>
         <section class="top-bar">
-            <h2>Top Bar</h2>
+            <h2>Show Me the Money</h2>
         </section>
         <section class="menu-bar">
             <div class="logo">Logo</div>
-            <div class="menu">Menu</div>
+            <div class="menu">
+                <ul class="menu-list">
+                    <a href="#"><li class="menu-item">Menu Item</li></a>
+                    <a href="#"><li class="menu-item">Menu Item</li></a>
+                    <a href="#"><li class="menu-item">Menu Item</li></a>
+                </ul>
+            </div>
         </section>
     </header>
     <main id='main-app'>
@@ -23,14 +29,17 @@
                 <h2>Market Sentiments Section</h2>
                 <p class="report">Bull, bull, bull!</p>
                 <p class="report">Bear, bear, bear!</p>
-                <a href="#">Load More...</a>
+                <a href="#" class="load-more-reports">Load More...</a>
             </div>
             <div class="strategies">
                 <h2>Strategies Section</h2>
                 <form id="strategies" action="#">
                     <label for="aggressive-strat"><input type="radio" name="trading-strats" id="aggressive-strat">  Aggressive Trading Strategy</label>
-                    <label for="moderate-strat"><input type="radio" name="trading-strats" id="moderate-strat">  Moderate Trading Strategy</label>  
+                    <p class="strat-description">Blurb about aggressive strategy</p>
+                    <label for="moderate-strat"><input type="radio" name="trading-strats" id="moderate-strat">  Moderate Trading Strategy</label>
+                    <p class="strat-description">Blurb about moderate strategy</p>  
                     <label for="safe-strat"><input type="radio" name="trading-strats" id="safe-strat">  Safe Trading Strategy</label>
+                    <p class="strat-description">Blurb about safe strategy</p>
                 </form>
             </div>
         </section>
@@ -93,26 +102,51 @@
         <section id="right-sidebar">
             <div class="watchlist">
                 <h2>Watchlist Section</h2>
+                <li class="column-headers">
+                    <p>Symbol</p>
+                    <p>Chart</p>
+                    <p>Change</p>
+                    <p>Remove</p>
+                </li>
+                <li class="watch-item">
+                    <span class="watch-item-symbol">F</span>
+                    <span class="watch-item-chart">Chart goes here</span>
+                    <span class="watch-item-change">+10</span>
+                    <span class="watch-item-remove">X</span>
+                </li>
+                <li class="watch-item">
+                    <span class="watch-item-symbol">S</span>
+                    <span class="watch-item-chart">Chart goes here</span>
+                    <span class="watch-item-change">-20</span>
+                    <span class="watch-item-remove">X</span>
+                </li>
             </div>
             <div class="buttons">
                 <h2>Buttons Section</h2>
                 <button class="sell-all-positions">Sell All Positions</button>
                 <button class="cancel-all-orders">Cancel All Orders</button>
+                <button class="create-new-orders">Create New Orders</button>
+                <button class="begin-monitor">Begin Monitor</button>
+                <button class="pause-monitor">Pause Monitor</button>
             </div>
         </section>
     </main>
     <section id="bottom">
         <div class="upload">
             <h2>CSV Upload Section</h2>
+            <p>Upload a csv file with orders you would like to enter. <a href="#">Download template here.</a></p>
+            <input id="fileSelect" type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />  
         </div>
     </section>
     <footer>
         <h2>Footer</h2>
     </footer>
     <script
-        src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
-        integrity="sha256-pasqAKBDmFT4eHoN2ndd6lN370kFiGUFyTiUHWhU7k8="
-        crossorigin="anonymous"></script>
-    <script src="app.js"></script>
+        src="https://code.jquery.com/jquery-3.4.1.js"
+        integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="
+        crossorigin="anonymous">
+    </script>
+    <script type="text/javascript" src="config.js"></script>
+    <script type="text/javascript" src="app.js"></script>
 </body>
 </html>

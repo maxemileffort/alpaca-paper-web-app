@@ -9,6 +9,10 @@ body {
     background-color: #333333;
 }
 
+header {
+    margin-bottom: 20px;
+}
+
 main, .menu-bar, .buttons {
     display: flex;
 }
@@ -18,42 +22,9 @@ section, div {
     width: 100%;
 }
 
-#left-sidebar{
-    border: 1px solid white;
-    margin-right: 5%;
-}
-
-#account {
-    margin-right: 5%;
-    padding-right: 10%;
-    border: 1px solid white;
-}
-
-#right-sidebar{
-    border: 1px solid white;
-}
-
-#strategies {
-    display: flex;
-    flex-direction: column;
-}
-
-.position, .order, .column-headers {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: white 1px solid;
-}
-
-.column-headers {
-    border-bottom: white 3px solid;
-}
-
-.buttons {
-    flex-direction: column;
-}
 
 a {
-    color: orange;
+    color: #5FCF80;
 }
 
 li {
@@ -66,5 +37,92 @@ button {
     border-radius: 10px;
     padding: 10px;
     cursor: pointer;
+}
+
+#left-sidebar{
+    border: 1px solid white;
+    margin-right: 1%;
+    border-radius: 10px;
+}
+
+#account {
+    margin-right: 1%;
+    padding-right: 10%;
+    border: 1px solid #333333;
+    color: #333333;
+    background-color: white;
+    border-radius: 10px;
+}
+
+#right-sidebar{
+    border: 1px solid #333333;
+    color: #333333;
+    background-color: white;
+    border-radius: 10px;
+}
+
+#strategies {
+    display: flex;
+    flex-direction: column;
+}
+
+.strat-description {
+    margin-bottom: 10px;
+}
+
+.top-bar {
+    background-color: #5FCF80;
+}
+
+.menu-bar {
+    color: #5FCF80;
+    background-color: white;
+}
+
+.position, .order, .column-headers, .watch-item {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: #333333 1px solid;
+}
+
+.menu-list{
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+}
+
+.column-headers {
+    border-bottom: #333333 3px solid;
+}
+
+.buttons {
+    flex-direction: column;
+}
+
+.upload {
+    width: 50%;
+    min-height: 200px;
+    border: dashed white 5px;
+    border-radius: 10px;
+    margin: 2% auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.sell-all-positions, .cancel-all-orders {
+    background-color: #EB4134;
+    color: white
+}
+
+.create-new-orders, .begin-monitor {
+    background-color: #5FCF80;
+    color: white;
+}
+
+.pause-monitor{
+    background-color: #FBC328;
+    color: #333
 }
 

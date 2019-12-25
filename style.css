@@ -32,11 +32,18 @@ li {
 }
 
 button {
+    background-color: #5FCF80;
+    color: white;
     margin-top: 2%;
     width: 60%;
     border-radius: 10px;
     padding: 10px;
     cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover{
+    background-color: #5DA9DD;
 }
 
 #left-sidebar{
@@ -66,17 +73,25 @@ button {
     flex-direction: column;
 }
 
+#new-wl-symbol {
+    width: 60%;
+    border: 1px #444 solid;
+    border-radius: 4px;
+    padding: 5px;
+}
+
 .strat-description {
     margin-bottom: 10px;
 }
 
 .top-bar {
-    background-color: #5FCF80;
+    display: flex;
+    background: linear-gradient(0.25turn, #5FCF80 25%, #fff 50%);
 }
 
-.menu-bar {
-    color: #5FCF80;
-    background-color: white;
+.title{
+    width: 15%;
+    align-self: center;
 }
 
 .position, .order, .column-headers, .watch-item {
@@ -87,7 +102,7 @@ button {
 
 .menu-list{
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     list-style: none;
 }
 
@@ -111,18 +126,32 @@ button {
     align-items: center;
 }
 
-.sell-all-positions, .cancel-all-orders {
+.sell-all-positions:hover, .cancel-all-orders:hover {
     background-color: #EB4134;
     color: white
 }
 
-.create-new-orders, .begin-monitor {
-    background-color: #5FCF80;
-    color: white;
-}
-
-.pause-monitor{
+.pause-monitor:hover {
     background-color: #FBC328;
     color: #333
 }
 
+.watch-item-remove, .order-cancel, .position-cancel {
+    cursor: pointer;
+}
+
+.status-bar {
+    background-color: #5FCF80;
+    width: 100%;
+}
+
+.status-msg-box {
+    width: 100%;
+    background-color: #fff;
+}
+
+.status-msg {
+    text-align: center;
+    color: #333;
+    font-size: 1.5em;
+}

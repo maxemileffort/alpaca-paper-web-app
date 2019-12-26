@@ -31,6 +31,13 @@ li {
     padding: 5px 10px;
 }
 
+input[type='text'] {
+    width: 60%;
+    border: 1px #444 solid;
+    border-radius: 4px;
+    padding: 5px;
+}
+
 button {
     background-color: #5FCF80;
     color: white;
@@ -73,12 +80,7 @@ button:hover{
     flex-direction: column;
 }
 
-#new-wl-symbol {
-    width: 60%;
-    border: 1px #444 solid;
-    border-radius: 4px;
-    padding: 5px;
-}
+
 
 .strat-description {
     margin-bottom: 10px;

@@ -187,12 +187,13 @@ const pauseMonitor = ()=>{
 }
 
 const getWatchlistData = ()=>{
-    
+    console.log("getting watchlist data")
 }
 
 const renderWatchlist = (watchlist)=>{
+    console.log('trying to render watchlist')
     watchlist.forEach(function(){
-
+        console.log('boom')
     })
 }
 
@@ -262,15 +263,67 @@ $(document).on("click", ".add-to-watchlist", function(){
     })
 })
 
-$(".create-new-order").on("click", function(){
-    //turn controller section into input form
-    //submit button or cancel button that 
-    //reverts controller back to buttons
+//new order handlers
+$(document).on("click", ".create-new-order", function(){
+    //turn controls section into input form
+    $("div.buttons").html(`
+        <label for="new-order-symbol">Symbol:</label><br>
+        <input id="new-order-symbol" type="text" value="MSFT"><br>
+        <label for="new-order-shares">Shares:</label><br>
+        <input id="new-order-shares" type="text" value="10"><br>
+        <label for="new-order-side">Side:</label><br>
+        <input id="new-order-side" type="text" value="buy"><br>
+        <label for="new-order-type">Type:</label><br>
+        <input id="new-order-type" type="text" value="market"><br>
+        <label for="new-order-timeinforce">Time in force:</label><br>
+        <input id="new-order-timeinforce" type="text" value="gtc"><br>
+        <button class="new-order-submit">Create New Order</button><br>
+        <button class="cancel-new-order">Cancel</button>
+    `)
 
-    //grab some input values
+    $(".new-order-submit").on("click", function(){
+        //grab info
+        let symbol = $("#new-order-symbol").val();
+        let shares = $("#new-order-shares").val();
+        let side = $("#new-order-side").val();
+        let type = $("#new-order-type").val();
+        let timeInForce = $("#new-order-timeinforce").val();
+        //create order
+        if (symbol && shares && side && type && timeInForce){
+            createOrder(symbol, shares, side, type, timeInForce)
+            $("div.buttons").html(`
+            <h2>Controls</h2>
+            <button class="create-new-order">Create New Order</button>
+            <button class="begin-monitor">Begin Monitor</button>
+            <button class="add-to-watchlist">Add to Watchlist</button>
+            <button class="pause-monitor">Pause Monitor</button>
+            <button class="sell-all-positions">Sell All Positions</button>
+            <button class="cancel-all-orders">Cancel All Orders</button>`)
+        } else {
+            //change form back to controls
+            $("div.buttons").html(`
+            <h2>Controls</h2>
+            <button class="create-new-order">Create New Order</button>
+            <button class="begin-monitor">Begin Monitor</button>
+            <button class="add-to-watchlist">Add to Watchlist</button>
+            <button class="pause-monitor">Pause Monitor</button>
+            <button class="sell-all-positions">Sell All Positions</button>
+            <button class="cancel-all-orders">Cancel All Orders</button>`)
+        }
+    })
 
-    //pass values to function
-    createOrder();
+    $(".cancel-new-order").on("click", function(){
+        //turn input form back to contols buttons
+        console.log("click")
+        $("div.buttons").html(`
+            <h2>Controls</h2>
+            <button class="create-new-order">Create New Order</button>
+            <button class="begin-monitor">Begin Monitor</button>
+            <button class="add-to-watchlist">Add to Watchlist</button>
+            <button class="pause-monitor">Pause Monitor</button>
+            <button class="sell-all-positions">Sell All Positions</button>
+            <button class="cancel-all-orders">Cancel All Orders</button>`)
+    })
 })
 
 $(".begin-monitor").on("click", function(){

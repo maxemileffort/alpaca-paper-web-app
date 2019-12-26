@@ -1,7 +1,8 @@
 // TODO: 
 // Drag and drop file uploading, monitor, 
 // support for limit orders, watchlist, delete single orders/positions,
-// trade history, reasearch
+// trade history, reasearch, csv template, DL link to template,
+// instructions for creating orders
 
 const apiKey = keys.apiKey;
 const secretKey = keys.secretKey;
@@ -73,8 +74,8 @@ const checkOrders = ()=>{
         // status: "new"
         // extended_hours: false
         // legs: null
-        console.log("Check Orders:")
-        console.log(response)
+        // console.log("Check Orders:")
+        // console.log(response)
         let ordersHtml = `
             <li class="column-headers">
                 <p>Symbol</p>
@@ -168,7 +169,7 @@ const createOrder = (sym, shares, side, tradeType, timeInForce)=>{
         'time_in_force': timeInForce
     }
 
-    console.log(data)
+    // console.log(data)
 
     $.ajax({
         method: 'POST',
@@ -222,8 +223,8 @@ const deleteAllOrders = ()=>{
         headers: headers
     }).then(function (response){
         // returns ???
-        console.log("Delete All Orders:")
-        console.log(response)
+        // console.log("Delete All Orders:")
+        // console.log(response)
         checkOrders();
     })
 }
@@ -256,8 +257,8 @@ const sellAllPositions = ()=>{
         headers: headers
     }).then(function (response){
         // returns ???
-        console.log("Sell All Positions:")
-        console.log(response)
+        // console.log("Sell All Positions:")
+        // console.log(response)
         checkPositions();
         checkOrders();
     })
@@ -402,7 +403,6 @@ $(document).on("click", ".create-new-order", function(){
         let type = $("#new-order-type").val();
         let timeInForce = $("#new-order-timeinforce").val();
         //create order
-        console.log(symbol, shares, side, type, timeInForce)
         if (symbol && shares && side && type && timeInForce){
             createOrder(symbol, shares, side, type, timeInForce)
             $("div.buttons").html(`

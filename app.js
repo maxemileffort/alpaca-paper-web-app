@@ -1,3 +1,8 @@
+// TODO: 
+// Drag and drop file uploading, monitor, 
+// support for limit orders, watchlist, delete single orders/positions,
+// trade history, reasearch
+
 const apiKey = keys.apiKey;
 const secretKey = keys.secretKey;
 
@@ -22,7 +27,14 @@ const getAccount = ()=>{
         headers: headers
     }).then(function (response){
         // returns object
-        console.log(response)
+        // console.log("Get account:")
+        // console.log(response)
+        // console.log(response.buying_power)
+        // console.log(response.equity)
+        let buyingPower = parseFloat(response.buying_power).toLocaleString();
+        let equity = parseFloat(response.equity).toLocaleString();
+        $('.equity').html(`${equity}`)
+        $('.buying-power').html(`${buyingPower}`)
     })
 }
 
@@ -33,8 +45,60 @@ const checkOrders = ()=>{
         contentType: 'application/json',
         headers: headers
     }).then(function (response){
-        // returns array
+        // returns array of objects
+        // id: "c523a473-763d-4fd3-b325-ac335c5ddf87"
+        // client_order_id: "42c8244a-fb72-47d4-93ca-dcc4514e7128"
+        // created_at: "2019-12-26T06:45:45.184363Z"
+        // updated_at: "2019-12-26T06:45:45.189758Z"
+        // submitted_at: "2019-12-26T06:45:45.16828Z"
+        // filled_at: null
+        // expired_at: null
+        // canceled_at: null
+        // failed_at: null
+        // replaced_at: null
+        // replaced_by: null
+        // replaces: null
+        // asset_id: "b6d1aa75-5c9c-4353-a305-9e2caa1925ab"
+        // symbol: "MSFT"
+        // asset_class: "us_equity"
+        // qty: "10"
+        // filled_qty: "0"
+        // filled_avg_price: null
+        // order_type: "market"
+        // type: "market"
+        // side: "buy"
+        // time_in_force: "gtc"
+        // limit_price: null
+        // stop_price: null
+        // status: "new"
+        // extended_hours: false
+        // legs: null
+        console.log("Check Orders:")
         console.log(response)
+        let ordersHtml = `
+            <li class="column-headers">
+                <p>Symbol</p>
+                <p>Side</p>
+                <p>Shares</p>
+                <p>Cancel</p>
+            </li>
+        `
+        response.forEach(function(el){
+            let symbol = el.symbol;
+            let side = el.side.toUpperCase();
+            let qty = el.qty;
+            let id = el.id;
+            let htmlToAppend = `
+                <li class="order">
+                    <span class="order-symbol">${symbol}</span>
+                    <span class="order-side">${side}</span>
+                    <span class="order-shares">${qty}</span>
+                    <span class="order-cancel-${id}">X</span>
+                </li>
+            `
+            ordersHtml = ordersHtml + htmlToAppend;
+        })
+        $('.orders-list').html(ordersHtml)
     })
 }
 
@@ -45,8 +109,32 @@ const checkPositions = ()=>{
         contentType: 'application/json',
         headers: headers
     }).then(function (response){
-        // returns array
-        console.log(response)
+        // returns array of objects
+        // console.log("Check Positions:")
+        // console.log(response)
+        let positionsHtml = `
+        <li class="column-headers">
+            <p>Symbol</p>
+            <p>Profit/Loss</p>
+            <p>Shares</p>
+            <p>Sell</p>
+        </li>`
+        response.forEach(function(el){
+            let assetId = el.asset_id;
+            let symbol = el.symbol;
+            let shares = el.qty;
+            let profitLoss = el.unrealized_pl;
+            let htmlToAppend = `
+            <li class="position">
+                <span class="position-symbol">${symbol}</span>
+                <span class="position-pl">${profitLoss}</span>
+                <span class="position-shares">${shares}</span>
+                <span class="position-cancel-${assetId}">X</span>
+            </li>
+            `
+            positionsHtml = positionsHtml + htmlToAppend;
+        })
+        $('.positions-list').html(positionsHtml) 
     })
 }
 
@@ -60,10 +148,10 @@ const checkPositionsBySymbol = (symbol)=>{
         url: `${positionsUrl}/${data.symbol}`,
         contentType: 'application/json',
         processData: false,
-        data: data,
         headers: headers
     }).then(function (response){
         // returns object
+        console.log("Check Positions by Symbol:")
         console.log(response)
     })
 }
@@ -71,49 +159,56 @@ const checkPositionsBySymbol = (symbol)=>{
 // POST functions
 const createOrder = (sym, shares, side, tradeType, timeInForce)=>{
     let symbol = sym.toUpperCase();
-    let qty = shares.parseFloat();
+
     data = {
-        symbol,
-        qty,
-        side,
-        tradeType,
-        timeInForce
+        'symbol': symbol,
+        'qty': shares,
+        'side': side,
+        'type': tradeType,
+        'time_in_force': timeInForce
     }
+
+    console.log(data)
 
     $.ajax({
         method: 'POST',
         url: `${ordersUrl}`,
         contentType: 'application/json',
+        dataType: 'json',
         processData: false,
-        data: data,
+        data: JSON.stringify(data),
         headers: headers
     }).then(function (response){
         // returns object
-        console.log(response)
+        // console.log("Create Orders:")
+        // console.log(response)
+        checkOrders();
     })
 }
 
 // PATCH functions
 const updateOrder = (orderId, sym, shares, side, tradeType, timeInForce)=>{
     let symbol = sym.toUpperCase();
-    let qty = shares.parseFloat()
+
     data = {
-        symbol,
-        qty,
-        side,
-        tradeType,
-        timeInForce
+        'symbol': symbol,
+        'qty': shares,
+        'side': side,
+        'type': tradeType,
+        'time_in_force': timeInForce
     }
 
     $.ajax({
         method: 'PATCH',
         url: `${ordersUrl}/${orderId}`,
         contentType: 'application/json',
+        dataType: 'json',
         processData: false,
-        data: data,
+        data: JSON.stringify(data),
         headers: headers
     }).then(function (response){
         // returns ???
+        console.log("Patch order:")
         console.log(response)
     })
 }
@@ -127,7 +222,9 @@ const deleteAllOrders = ()=>{
         headers: headers
     }).then(function (response){
         // returns ???
+        console.log("Delete All Orders:")
         console.log(response)
+        checkOrders();
     })
 }
 
@@ -139,12 +236,15 @@ const deleteOrderById = (orderId)=>{
         method: 'DELETE',
         url: `${ordersUrl}/${orderId}`,
         contentType: 'application/json',
+        dataType: 'json',
         processData: false,
-        data: data,
+        data: JSON.stringify(data),
         headers: headers
     }).then(function (response){
         // returns ???
+        console.log("Delete Order by ID:")
         console.log(response)
+        checkOrders();
     })
 }
 
@@ -156,7 +256,10 @@ const sellAllPositions = ()=>{
         headers: headers
     }).then(function (response){
         // returns ???
+        console.log("Sell All Positions:")
         console.log(response)
+        checkPositions();
+        checkOrders();
     })
 }
 
@@ -168,16 +271,26 @@ const sellPositionBySymbol = (symbol)=>{
         method: 'DELETE',
         url: `${ordersUrl}/${symbol}`,
         contentType: 'application/json',
+        dataType: 'json',
         processData: false,
-        data: data,
+        data: JSON.stringify(data),
         headers: headers
     }).then(function (response){
         // returns ???
+        console.log("Sell Position by ID:")
         console.log(response)
+        checkPositions();
+        checkOrders();
     })
 }
 
 // non-API functions
+const pageLoad = ()=>{
+    getAccount();
+    checkOrders();
+    checkPositions();
+}
+
 const beginMonitor = ()=>{
     console.log("Beginning monitor process!")
 }
@@ -212,11 +325,11 @@ const addToWatchlist = (symbol)=>{
 }
 
 // App logic & interaction
-$(".sell-all-positions").on("click", function(){
+$(document).on("click", ".sell-all-positions", function(){
     sellAllPositions();
 })
 
-$(".cancel-all-orders").on("click", function(){
+$(document).on("click", ".cancel-all-orders", function(){
     deleteAllOrders();
 })
 
@@ -289,6 +402,7 @@ $(document).on("click", ".create-new-order", function(){
         let type = $("#new-order-type").val();
         let timeInForce = $("#new-order-timeinforce").val();
         //create order
+        console.log(symbol, shares, side, type, timeInForce)
         if (symbol && shares && side && type && timeInForce){
             createOrder(symbol, shares, side, type, timeInForce)
             $("div.buttons").html(`
@@ -334,3 +448,8 @@ $(".pause-monitor").on("click", function(){
     pauseMonitor();
 })
 
+$(document).on("click", ".menu-link", function(){
+    console.log(this);
+})
+
+pageLoad();

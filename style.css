@@ -80,7 +80,21 @@ button:hover{
     flex-direction: column;
 }
 
+.menu{
+    height: 100%;
+}
 
+.menu-link{
+    text-decoration: none;
+    padding: 20px 20px;
+    border-radius: 5px;
+    height: 100%;
+}
+
+.active-link{
+    background-color: #5FCF80;
+    color: white;
+}
 
 .strat-description {
     margin-bottom: 10px;

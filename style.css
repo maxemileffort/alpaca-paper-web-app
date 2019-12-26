@@ -22,7 +22,6 @@ section, div {
     width: 100%;
 }
 
-
 a {
     color: #5FCF80;
 }
@@ -51,12 +50,6 @@ button {
 
 button:hover{
     background-color: #5DA9DD;
-}
-
-#left-sidebar{
-    border: 1px solid white;
-    margin-right: 1%;
-    border-radius: 10px;
 }
 
 #account {
@@ -142,16 +135,6 @@ button:hover{
     align-items: center;
 }
 
-.sell-all-positions:hover, .cancel-all-orders:hover {
-    background-color: #EB4134;
-    color: white
-}
-
-.pause-monitor:hover {
-    background-color: #FBC328;
-    color: #333
-}
-
 .watch-item-remove, .order-cancel, .position-cancel {
     cursor: pointer;
 }
@@ -170,4 +153,8 @@ button:hover{
     text-align: center;
     color: #333;
     font-size: 1.5em;
+}
+
+.red-text {
+    color: red;
 }

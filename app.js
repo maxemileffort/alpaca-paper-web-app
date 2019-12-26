@@ -1,8 +1,6 @@
 // TODO: 
 // Drag and drop file uploading, monitor, 
-// support for limit orders, watchlist, delete single orders/positions,
-// trade history, reasearch, csv template, DL link to template,
-// instructions for creating orders
+// trade history, research, instructions for creating orders
 
 const apiKey = keys.apiKey;
 const secretKey = keys.secretKey;
@@ -15,8 +13,6 @@ const headers = {
     'APCA-API-KEY-ID': apiKey,
     'APCA-API-SECRET-KEY': secretKey
 };
-
-let symbolWatchlist = []
 
 // API functions
 // GET functions
@@ -94,12 +90,13 @@ const checkOrders = ()=>{
                     <span class="order-symbol">${symbol}</span>
                     <span class="order-side">${side}</span>
                     <span class="order-shares">${qty}</span>
-                    <span class="order-cancel-${id}">X</span>
+                    <span class="order-cancel id-${id}">X</span>
                 </li>
             `
             ordersHtml = ordersHtml + htmlToAppend;
         })
-        $('.orders-list').html(ordersHtml)
+        $('.orders-list').html(ordersHtml);
+        return response;
     })
 }
 
@@ -130,43 +127,51 @@ const checkPositions = ()=>{
                 <span class="position-symbol">${symbol}</span>
                 <span class="position-pl">${profitLoss}</span>
                 <span class="position-shares">${shares}</span>
-                <span class="position-cancel-${assetId}">X</span>
+                <span class="position-cancel id-${assetId}">X</span>
             </li>
             `
             positionsHtml = positionsHtml + htmlToAppend;
         })
-        $('.positions-list').html(positionsHtml) 
+        $('.positions-list').html(positionsHtml);
+        return response;
     })
 }
 
 const checkPositionsBySymbol = (symbol)=>{
-    let data = {
-        'symbol': symbol.toUpperCase()
-    }
-
-    $.ajax({
-        method: 'GET',
-        url: `${positionsUrl}/${data.symbol}`,
-        contentType: 'application/json',
-        processData: false,
-        headers: headers
-    }).then(function (response){
-        // returns object
-        console.log("Check Positions by Symbol:")
-        console.log(response)
+    return new Promise(resolve=>{
+        if (resolve){
+            $.ajax({
+                method: 'GET',
+                url: `${positionsUrl}/${symbol.toUpperCase()}`,
+                contentType: 'application/json',
+                processData: false,
+                headers: headers
+            }).then(function (response){
+                // returns object
+                console.log("Check Positions by Symbol:")
+                console.log(response)
+                return response
+            }).catch(function(err){
+                console.log(err)
+                if (err.status === 404){
+                    $(".status-msg").html("Position does not exist.").addClass("red-text")
+                }
+                return err
+            })
+        }
     })
 }
 
 // POST functions
-const createOrder = (sym, shares, side, tradeType, timeInForce)=>{
+const createOrder = (sym)=>{
     let symbol = sym.toUpperCase();
 
     data = {
         'symbol': symbol,
-        'qty': shares,
-        'side': side,
-        'type': tradeType,
-        'time_in_force': timeInForce
+        'qty': 100,
+        'side': "buy",
+        'type': "market",
+        'time_in_force': "gtc"
     }
 
     // console.log(data)
@@ -181,8 +186,93 @@ const createOrder = (sym, shares, side, tradeType, timeInForce)=>{
         headers: headers
     }).then(function (response){
         // returns object
-        // console.log("Create Orders:")
-        // console.log(response)
+        console.log("Create Orders:")
+        console.log(response)
+        checkOrders();
+        checkPositions();
+        sleep(1000).then(function(){
+            checkPositionsBySymbol(symbol).then(function(response){
+                console.log(response)
+                for (let x=1;x<=10;x+=1){
+                    let price = parseFloat(response.current_price);
+                    price = price-(0.02*x)
+                    createBuyLimits(symbol, price.toString());
+                    sleep(500)
+                    checkOrders();
+                    checkPositions();
+                }
+                for(let y=1;y<=10;y+=1){
+                    let price = parseFloat(response.current_price);
+                    price = price+(0.02*y)
+                    createSellLimits(symbol, price.toString())
+                    sleep(500)
+                    checkOrders();
+                    checkPositions();
+                }
+            }).catch(function(err){
+                console.log(err)
+            });
+            
+        })
+    })
+}
+
+const createBuyLimits = (sym, price)=>{
+    let symbol = sym.toUpperCase();
+
+    data = {
+        'symbol': symbol,
+        'qty': 100,
+        'side': "buy",
+        'type': "limit",
+        'time_in_force': "gtc",
+        'limit_price': price
+    }
+
+    // console.log(data)
+
+    $.ajax({
+        method: 'POST',
+        url: `${ordersUrl}`,
+        contentType: 'application/json',
+        dataType: 'json',
+        processData: false,
+        data: JSON.stringify(data),
+        headers: headers
+    }).then(function (response){
+        // returns object
+        console.log("Create Buys:")
+        console.log(response)
+        checkOrders();
+    })
+}
+
+const createSellLimits = (sym, price)=>{
+    let symbol = sym.toUpperCase();
+
+    data = {
+        'symbol': symbol,
+        'qty': 100,
+        'side': "sell",
+        'type': "limit",
+        'time_in_force': "gtc",
+        'limit_price': price
+    }
+
+    // console.log(data)
+
+    $.ajax({
+        method: 'POST',
+        url: `${ordersUrl}`,
+        contentType: 'application/json',
+        dataType: 'json',
+        processData: false,
+        data: JSON.stringify(data),
+        headers: headers
+    }).then(function (response){
+        // returns object
+        console.log("Create sells:")
+        console.log(response)
         checkOrders();
     })
 }
@@ -292,151 +382,53 @@ const pageLoad = ()=>{
     checkPositions();
 }
 
-const beginMonitor = ()=>{
-    console.log("Beginning monitor process!")
-}
-
-const pauseMonitor = ()=>{
-    console.log("Pausing monitor process!")
-}
-
-const getWatchlistData = ()=>{
-    console.log("getting watchlist data")
-}
-
-const renderWatchlist = (watchlist)=>{
-    console.log('trying to render watchlist')
-    watchlist.forEach(function(){
-        console.log('boom')
-    })
-}
-
-const addToWatchlist = (symbol)=>{
-    console.log("Adding to watchlist... " + symbol)
-    symbolWatchlist.push(symbol);
-    console.log(symbolWatchlist)
-    $("div.buttons").html(`
-        <h2>Controls</h2>
-        <button class="create-new-order">Create New Order</button>
-        <button class="begin-monitor">Begin Monitor</button>
-        <button class="add-to-watchlist">Add to Watchlist</button>
-        <button class="pause-monitor">Pause Monitor</button>
-        <button class="sell-all-positions">Sell All Positions</button>
-        <button class="cancel-all-orders">Cancel All Orders</button>`)
-}
+const sleep = (milliseconds) => {
+    return new Promise(resolve => setTimeout(resolve, milliseconds))
+  }
 
 // App logic & interaction
-$(document).on("click", ".sell-all-positions", function(){
-    sellAllPositions();
-})
-
-$(document).on("click", ".cancel-all-orders", function(){
-    deleteAllOrders();
-})
-
-//watchlist handlers
-$(document).on("click", ".add-to-watchlist", function(){
-    //turn controls section into input form
-    $("div.buttons").html(`
-        <label for="new-wl-symbol">Symbol to watch:</label><br>
-        <input id="new-wl-symbol" type="text"><br>
-        <button class="new-wl-submit">Add to WL</button><br>
-        <button class="cancel-add-to-wl">Cancel Add to WL</button>
+$(document).on("click", ".new-ping-pong", function(){
+    $(".buttons").html(`
+        <h2>Create a new Ping Pong</h2>
+        <label for="ping-pong-symbol">Symbol:<br>
+            <input type="text" name="ping-pong-symbol" id="ping-pong-symbol">
+        </label> 
+        <button class="submit-ping-pong">Create</button>
+        <button class="cancel-ping-pong">Cancel</button>
     `)
 
-    $(".new-wl-submit").on("click", function(){
-        //grab desired symbol
-        let symbol = $("#new-wl-symbol").val();
-        //add to watchlist
+    $(".submit-ping-pong").on("click", function(){
+        let symbol = $("#ping-pong-symbol").val().toUpperCase();
         if (symbol){
-            addToWatchlist(symbol)
-        } else {
-            //change form back to controls
-            $("div.buttons").html(`
-            <h2>Controls</h2>
-            <button class="create-new-order">Create New Order</button>
-            <button class="begin-monitor">Begin Monitor</button>
-            <button class="add-to-watchlist">Add to Watchlist</button>
-            <button class="pause-monitor">Pause Monitor</button>
-            <button class="sell-all-positions">Sell All Positions</button>
-            <button class="cancel-all-orders">Cancel All Orders</button>`)
+            createOrder(symbol);
+            $(".status-msg").html(`
+                Ping Pong Created for ${symbol}.
+            `)
+            $(".buttons").html(`
+                <h2>Controls</h2>
+                <button class="new-ping-pong">New Ping Pong</button>
+            `)
+        }
+        else {
+            $(".buttons").html(`
+                <h2>Controls</h2>
+                <button class="new-ping-pong">New Ping Pong</button>
+            `)
+            $(".status-msg").html(`
+                No New Ping Pongs Created.
+            `)
         }
     })
 
-    $(".cancel-add-to-wl").on("click", function(){
-        //turn input form back to contols buttons
-        console.log("click")
-        $("div.buttons").html(`
-            <h2>Controls</h2>
-            <button class="create-new-order">Create New Order</button>
-            <button class="begin-monitor">Begin Monitor</button>
-            <button class="add-to-watchlist">Add to Watchlist</button>
-            <button class="pause-monitor">Pause Monitor</button>
-            <button class="sell-all-positions">Sell All Positions</button>
-            <button class="cancel-all-orders">Cancel All Orders</button>`)
-    })
-})
-
-//new order handlers
-$(document).on("click", ".create-new-order", function(){
-    //turn controls section into input form
-    $("div.buttons").html(`
-        <label for="new-order-symbol">Symbol:</label><br>
-        <input id="new-order-symbol" type="text" value="MSFT"><br>
-        <label for="new-order-shares">Shares:</label><br>
-        <input id="new-order-shares" type="text" value="10"><br>
-        <label for="new-order-side">Side:</label><br>
-        <input id="new-order-side" type="text" value="buy"><br>
-        <label for="new-order-type">Type:</label><br>
-        <input id="new-order-type" type="text" value="market"><br>
-        <label for="new-order-timeinforce">Time in force:</label><br>
-        <input id="new-order-timeinforce" type="text" value="gtc"><br>
-        <button class="new-order-submit">Create New Order</button><br>
-        <button class="cancel-new-order">Cancel</button>
-    `)
-
-    $(".new-order-submit").on("click", function(){
-        //grab info
-        let symbol = $("#new-order-symbol").val();
-        let shares = $("#new-order-shares").val();
-        let side = $("#new-order-side").val();
-        let type = $("#new-order-type").val();
-        let timeInForce = $("#new-order-timeinforce").val();
-        //create order
-        if (symbol && shares && side && type && timeInForce){
-            createOrder(symbol, shares, side, type, timeInForce)
-            $("div.buttons").html(`
-            <h2>Controls</h2>
-            <button class="create-new-order">Create New Order</button>
-            <button class="begin-monitor">Begin Monitor</button>
-            <button class="add-to-watchlist">Add to Watchlist</button>
-            <button class="pause-monitor">Pause Monitor</button>
-            <button class="sell-all-positions">Sell All Positions</button>
-            <button class="cancel-all-orders">Cancel All Orders</button>`)
-        } else {
-            //change form back to controls
-            $("div.buttons").html(`
-            <h2>Controls</h2>
-            <button class="create-new-order">Create New Order</button>
-            <button class="begin-monitor">Begin Monitor</button>
-            <button class="add-to-watchlist">Add to Watchlist</button>
-            <button class="pause-monitor">Pause Monitor</button>
-            <button class="sell-all-positions">Sell All Positions</button>
-            <button class="cancel-all-orders">Cancel All Orders</button>`)
-        }
-    })
-
-    $(".cancel-new-order").on("click", function(){
-        //turn input form back to contols buttons
-        console.log("click")
-        $("div.buttons").html(`
-            <h2>Controls</h2>
-            <button class="create-new-order">Create New Order</button>
-            <button class="begin-monitor">Begin Monitor</button>
-            <button class="add-to-watchlist">Add to Watchlist</button>
-            <button class="pause-monitor">Pause Monitor</button>
-            <button class="sell-all-positions">Sell All Positions</button>
-            <button class="cancel-all-orders">Cancel All Orders</button>`)
+    $(".cancel-ping-pong").on("click", function(){
+        $("#ping-pong-symbol").val() = '';
+            $(".buttons").html(`
+                <h2>Controls</h2>
+                <button class="new-ping-pong">New Ping Pong</button>
+            `)
+            $(".status-msg").html(`
+                No New Ping Pongs Created.
+            `)
     })
 })
 

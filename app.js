@@ -1,5 +1,7 @@
 // TODO: 
-// research tab
+// research tab, tab behavior, 
+// intervals to check orders to re-ping and re-pong,
+// 
 
 const apiKey = keys.apiKey;
 const secretKey = keys.secretKey;
@@ -156,7 +158,7 @@ const createOrder = (sym, pingOrPong)=>{
         let data = {
             'symbol': symbol,
             'qty': 100,
-            'side': "buy",
+            'side': (pingOrPong === "ping") ? "buy" : "sell",
             'type': "limit",
             'time_in_force': "gtc",
             "limit_price": firstOrderPrice
@@ -370,7 +372,7 @@ $(document).on("click", ".new-ping", function(){
     $(".buttons").html(`
         <h2>Create a new Ping</h2>
         <label for="ping-symbol">Symbol:<br>
-            <input type="text" name="ping-symbol" id="ping-symbol">
+            <input autofocus type="text" name="ping-symbol" id="ping-symbol">
         </label> 
         <button class="submit-ping">Create</button>
         <button class="cancel-ping">Cancel</button>
@@ -382,7 +384,7 @@ $(document).on("click", ".new-ping", function(){
             createOrder(symbol, "ping");
             $(".status-msg").html(`
                 Ping Created for ${symbol}.
-            `).removeClass("red")
+            `)
             $(".buttons").html(`
                 <h2>Controls</h2>
                 <button class="new-ping">New Ping</button>
@@ -399,21 +401,20 @@ $(document).on("click", ".new-ping", function(){
             `)
             $(".status-msg").html(`
                 No New Pings Created.
-            `).removeClass("red")
+            `)
         }
     })
 
     $(".cancel-ping").on("click", function(){
-        $("#ping-symbol").val() = '';
-            $(".buttons").html(`
-                <h2>Controls</h2>
-                <button class="new-ping">New Ping</button>
-                <button class="new-pong">New Pong</button>
-                <button class="clear-pending">Clear Pending Orders</button>
-            `)
-            $(".status-msg").html(`
-                No New Pings Created.
-            `).removeClass("red")
+        $(".buttons").html(`
+            <h2>Controls</h2>
+            <button class="new-ping">New Ping</button>
+            <button class="new-pong">New Pong</button>
+            <button class="clear-pending">Clear Pending Orders</button>
+        `)
+        $(".status-msg").html(`
+            No New Pings Created.
+        `)
     })
 })
 
@@ -422,7 +423,7 @@ $(document).on("click", ".new-pong", function(){
     $(".buttons").html(`
         <h2>Create a new Pong</h2>
         <label for="pong-symbol">Symbol:<br>
-            <input type="text" name="pong-symbol" id="pong-symbol">
+            <input autofocus type="text" name="pong-symbol" id="pong-symbol">
         </label> 
         <button class="submit-pong">Create</button>
         <button class="cancel-pong">Cancel</button>
@@ -434,7 +435,7 @@ $(document).on("click", ".new-pong", function(){
             createOrder(symbol, "pong");
             $(".status-msg").html(`
                 Pong Created for ${symbol}.
-            `).removeClass("red")
+            `)
             $(".buttons").html(`
                 <h2>Controls</h2>
                 <button class="new-ping">New Ping</button>
@@ -451,12 +452,11 @@ $(document).on("click", ".new-pong", function(){
             `)
             $(".status-msg").html(`
                 No New Pongs Created.
-            `).removeClass("red")
+            `)
         }
     })
 
     $(".cancel-pong").on("click", function(){
-        $("#pong-symbol").val() = '';
             $(".buttons").html(`
                 <h2>Controls</h2>
                 <button class="new-ping">New Ping</button>
@@ -465,7 +465,7 @@ $(document).on("click", ".new-pong", function(){
             `)
             $(".status-msg").html(`
                 No New Pongs Created.
-            `).removeClass("red")
+            `)
     })
 })
 
@@ -474,8 +474,33 @@ $(document).on("click", ".clear-pending", function(){
     sleep(500).then(pageLoad())
 })
 
-$(document).on("click", ".menu-link", function(){
-    console.log(this);
+$(document).on("click", ".menu-link", function(e){
+    e.preventDefault();
+    let test = e.currentTarget.className.includes("active-link");
+    // console.log(test);
+    if(test){return}
+    else{
+        $(".active-link").removeClass("active-link");
+        $(e.currentTarget).addClass("active-link")
+    }
+    pageLoad();
+})
+
+$(document).on("click", ".refresh", function(){
+    pageLoad();
+})
+
+$(document).on("click", ".position-cancel", function(e){
+    let idString = e.target.classList[1]
+    let slicedId = idString.replace("id-", '')
+})
+
+$(document).on("click", ".order-cancel", function(e){
+    let idString = e.target.classList[1]
+    let slicedId = idString.replace("id-", '')
+    console.log(slicedId)
+    deleteOrderById(slicedId)
+    sleep(500).then(pageLoad())
 })
 
 pageLoad();

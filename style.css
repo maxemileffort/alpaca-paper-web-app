@@ -158,3 +158,13 @@ button:hover{
 .red-text {
     color: red;
 }
+
+.refresh{
+    width: 80px;
+    margin-left: 20px;
+}
+
+.orders-list {
+    max-height: 300px;
+    overflow-y: scroll;
+}

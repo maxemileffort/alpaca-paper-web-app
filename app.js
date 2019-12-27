@@ -1,7 +1,7 @@
 // TODO: 
 // research tab, tab behavior, 
 // intervals to check orders to re-ping and re-pong,
-// 
+// equity chart, 
 
 const apiKey = keys.apiKey;
 const secretKey = keys.secretKey;
@@ -38,83 +38,91 @@ const getAccount = ()=>{
 }
 
 const checkOrders = ()=>{
-    $.ajax({
-        method: 'GET',
-        url: ordersUrl,
-        contentType: 'application/json',
-        headers: headers
-    }).then(function (response){
-        // returns array of objects
-        // console.log("Check Orders:")
-        // console.log(response)
-        let ordersHtml = `
-            <li class="column-headers">
-                <p>Symbol</p>
-                <p>Side</p>
-                <p>Price</p>
-                <p>Shares</p>
-                <p>Cancel</p>
-            </li>
-        `
-        response.forEach(function(el){
-            let symbol = el.symbol;
-            let side = el.side.toUpperCase();
-            let price = el.limit_price;
-            let qty = el.qty;
-            let id = el.id;
-            let htmlToAppend = `
-                <li class="order">
-                    <span class="order-symbol">${symbol}</span>
-                    <span class="order-side">${side}</span>
-                    <span class="order-price">${price}</span>
-                    <span class="order-shares">${qty}</span>
-                    <span class="order-cancel id-${id}">X</span>
+    return new Promise((resolve, reject)=>{
+        $.ajax({
+            method: 'GET',
+            url: ordersUrl,
+            contentType: 'application/json',
+            headers: headers
+        }).then(function (response){
+            // returns array of objects
+            // console.log("Check Orders:")
+            // console.log(response)
+            let ordersHtml = `
+                <li class="column-headers">
+                    <p>Symbol</p>
+                    <p>Side</p>
+                    <p>Price</p>
+                    <p>Shares</p>
+                    <p>Cancel</p>
                 </li>
             `
-            ordersHtml = ordersHtml + htmlToAppend;
-        })
-        $('.orders-list').html(ordersHtml);
-        return response;
+            response.forEach(function(el){
+                let symbol = el.symbol;
+                let side = el.side.toUpperCase();
+                let price = el.limit_price;
+                let qty = el.qty;
+                let id = el.id;
+                let htmlToAppend = `
+                    <li class="order">
+                        <span class="order-symbol">${symbol}</span>
+                        <span class="order-side">${side}</span>
+                        <span class="order-price">${price}</span>
+                        <span class="order-shares">${qty}</span>
+                        <span class="order-cancel id-${id}">X</span>
+                    </li>
+                `
+                ordersHtml = ordersHtml + htmlToAppend;
+            })
+            $('.orders-list').html(ordersHtml);
+            resolve(response)
+        }).catch(()=>{reject("Failed to check orders.")})
+        
     })
 }
 
 const checkPositions = ()=>{
-    $.ajax({
-        method: 'GET',
-        url: positionsUrl,
-        contentType: 'application/json',
-        headers: headers
-    }).then(function (response){
-        // returns array of objects
-        // console.log("Check Positions:")
-        // console.log(response)
-        let positionsHtml = `
-        <li class="column-headers">
-            <p>Symbol</p>
-            <p>Price</p>
-            <p>Shares</p>
-            <p>Profit/Loss</p>
-            <p>Sell</p>
-        </li>`
-        response.forEach(function(el){
-            let assetId = el.asset_id;
-            let symbol = el.symbol;
-            let price = el.current_price;
-            let shares = el.qty;
-            let profitLoss = el.unrealized_pl;
-            let htmlToAppend = `
-            <li class="position">
-                <span class="position-symbol">${symbol}</span>
-                <span class="position-price">${price}</span>
-                <span class="position-shares">${shares}</span>
-                <span class="position-pl">${profitLoss}</span>
-                <span class="position-cancel id-${assetId}">X</span>
-            </li>
-            `
-            positionsHtml = positionsHtml + htmlToAppend;
+    return new Promise((resolve, reject)=>{
+        $.ajax({
+            method: 'GET',
+            url: positionsUrl,
+            contentType: 'application/json',
+            headers: headers
+        }).then(function (response){
+            // returns array of objects
+            // console.log("Check Positions:")
+            // console.log(response)
+            let positionsHtml = `
+            <li class="column-headers">
+                <p>Symbol</p>
+                <p>Price</p>
+                <p>Shares</p>
+                <p>Profit/Loss</p>
+                <p>Sell</p>
+            </li>`
+            response.forEach(function(el){
+                let assetId = el.asset_id;
+                let symbol = el.symbol;
+                let price = el.current_price;
+                let shares = el.qty;
+                let profitLoss = el.unrealized_pl;
+                let htmlToAppend = `
+                <li class="position">
+                    <span class="position-symbol">${symbol}</span>
+                    <span class="position-price">${price}</span>
+                    <span class="position-shares">${shares}</span>
+                    <span class="position-pl">${profitLoss}</span>
+                    <span class="position-cancel id-${assetId}">X</span>
+                </li>
+                `
+                positionsHtml = positionsHtml + htmlToAppend;
+            })
+            $('.positions-list').html(positionsHtml);
+            resolve(response) ;
+        }).catch((err)=>{
+            console.log(err)
+            reject(err)
         })
-        $('.positions-list').html(positionsHtml);
-        return response;
     })
 }
 
@@ -154,14 +162,22 @@ const createOrder = (sym, pingOrPong)=>{
         dataType: 'json'
     }).then(function(response){
         console.log(response["Global Quote"]["05. price"]);
-        let firstOrderPrice = response["Global Quote"]["05. price"]
+        let firstOrderPrice = response["Global Quote"]["05. price"];
+        // if we are selling, add a little to current price before starting the process,
+        // else if we are buying, just use current price.
+        let workingPrice;
+        if (pingOrPong === "pong") {
+            workingPrice = parseFloat(firstOrderPrice) + 0.02 
+        } else {
+            workingPrice = parseFloat(firstOrderPrice);
+        }
         let data = {
             'symbol': symbol,
             'qty': 100,
             'side': (pingOrPong === "ping") ? "buy" : "sell",
             'type': "limit",
             'time_in_force': "gtc",
-            "limit_price": firstOrderPrice
+            "limit_price": workingPrice.toString()
         }
         $.ajax({
             method: 'POST',
@@ -176,10 +192,10 @@ const createOrder = (sym, pingOrPong)=>{
             console.log("Create Orders:")
             console.log(response)
             pageLoad();
-            sleep(1000)
+            sleep(500)
             if (pingOrPong === "ping"){
                 for (let x=1;x<=10;x+=1){
-                    let price1 = parseFloat(firstOrderPrice);
+                    let price1 = workingPrice;
                     price1 = price1-(0.02*x)
                     createBuyLimits(symbol, price1.toString());
                     sleep(500)
@@ -187,7 +203,7 @@ const createOrder = (sym, pingOrPong)=>{
             }
             if (pingOrPong === "pong"){
                 for(let y=1;y<=10;y+=1){
-                    let price2 = parseFloat(firstOrderPrice);
+                    let price2 = workingPrice;
                     price2 = price2+(0.02*y)
                     createSellLimits(symbol, price2.toString())
                     sleep(500)
@@ -368,7 +384,56 @@ const pageLoad = ()=>{
 
 const sleep = (milliseconds) => {
     return new Promise(resolve => setTimeout(resolve, milliseconds))
-  }
+}
+
+const monitor = ()=>{
+    checkPositions().then((response)=>{
+        if (!response.length){
+            setTimeout(monitor, 3000)
+        } else {
+            console.log("Monitor positions:")
+            console.log(response)
+            response.forEach((el)=>{
+                let shares = el.qty;
+                let numOfOrders = shares / 100;
+                console.log("num of orders:")
+                console.log(numOfOrders)
+                let x = 1
+                while (x <= numOfOrders) {
+                    let symbol = el.symbol;
+                    let minSalePrice = el.avg_entry_price;    
+                    let data = {
+                        'symbol': symbol,
+                        'qty': 100,
+                        'side': "sell",
+                        'type': "limit",
+                        'time_in_force': "gtc",
+                        'limit_price': minSalePrice = (parseFloat(minSalePrice)+(0.02*x)).toString()
+                    }
+                    $.ajax({
+                        method: 'POST',
+                        url: `${ordersUrl}`,
+                        contentType: 'application/json',
+                        dataType: 'json',
+                        processData: false,
+                        data: JSON.stringify(data),
+                        headers: headers
+                    }).then(function (response){
+                        // returns object
+                        console.log("Create sells:")
+                        console.log(response)
+                        pageLoad();
+                    }).catch((err)=>{
+                        console.log("error:")
+                        console.log(err)
+                    })
+                    x+=1
+                }
+            })
+            setTimeout(monitor, 5000)
+        }
+    })
+}
 
 // App logic & interaction
 // create buy orders
@@ -376,11 +441,13 @@ $(document).on("click", ".new-ping", function(){
     $(".buttons").html(`
         <h2>Create a new Ping</h2>
         <label for="ping-symbol">Symbol:<br>
-            <input autofocus type="text" name="ping-symbol" id="ping-symbol">
+            <input autofocus type="text" name="ping-symbol" id="ping-symbol" autocomplete="off">
         </label> 
         <button class="submit-ping">Create</button>
         <button class="cancel-ping">Cancel</button>
     `)
+
+    $("#ping-symbol").focus();
 
     $(".submit-ping").on("click", function(){
         let symbol = $("#ping-symbol").val().toUpperCase();
@@ -394,6 +461,7 @@ $(document).on("click", ".new-ping", function(){
                 <button class="new-ping">New Ping</button>
                 <button class="new-pong">New Pong</button>
                 <button class="clear-pending">Clear Pending Orders</button>
+                <button class="toggle-monitor">Toggle Monitor</button>
             `)
         }
         else {
@@ -402,6 +470,7 @@ $(document).on("click", ".new-ping", function(){
                 <button class="new-ping">New Ping</button>
                 <button class="new-pong">New Pong</button>
                 <button class="clear-pending">Clear Pending Orders</button>
+                <button class="toggle-monitor">Toggle Monitor</button>
             `)
             $(".status-msg").html(`
                 No New Pings Created.
@@ -415,6 +484,7 @@ $(document).on("click", ".new-ping", function(){
             <button class="new-ping">New Ping</button>
             <button class="new-pong">New Pong</button>
             <button class="clear-pending">Clear Pending Orders</button>
+            <button class="toggle-monitor">Toggle Monitor</button>
         `)
         $(".status-msg").html(`
             No New Pings Created.
@@ -427,11 +497,13 @@ $(document).on("click", ".new-pong", function(){
     $(".buttons").html(`
         <h2>Create a new Pong</h2>
         <label for="pong-symbol">Symbol:<br>
-            <input autofocus type="text" name="pong-symbol" id="pong-symbol">
+            <input autofocus type="text" name="pong-symbol" id="pong-symbol" autocomplete="off">
         </label> 
         <button class="submit-pong">Create</button>
         <button class="cancel-pong">Cancel</button>
     `)
+
+    $("#pong-symbol").focus();
 
     $(".submit-pong").on("click", function(){
         let symbol = $("#pong-symbol").val().toUpperCase();
@@ -445,6 +517,7 @@ $(document).on("click", ".new-pong", function(){
                 <button class="new-ping">New Ping</button>
                 <button class="new-pong">New Pong</button>
                 <button class="clear-pending">Clear Pending Orders</button>
+                <button class="toggle-monitor">Toggle Monitor</button>
             `)
         }
         else {
@@ -453,6 +526,7 @@ $(document).on("click", ".new-pong", function(){
                 <button class="new-ping">New Ping</button>
                 <button class="new-pong">New Pong</button>
                 <button class="clear-pending">Clear Pending Orders</button>
+                <button class="toggle-monitor">Toggle Monitor</button>
             `)
             $(".status-msg").html(`
                 No New Pongs Created.
@@ -466,6 +540,7 @@ $(document).on("click", ".new-pong", function(){
                 <button class="new-ping">New Ping</button>
                 <button class="new-pong">New Pong</button>
                 <button class="clear-pending">Clear Pending Orders</button>
+                <button class="toggle-monitor">Toggle Monitor</button>
             `)
             $(".status-msg").html(`
                 No New Pongs Created.
@@ -498,7 +573,7 @@ $(document).on("click", ".position-cancel", function(e){
     let symbol = e.target.parentNode.children[0].innerText
     console.log(symbol)
     sellPositionBySymbol(symbol);
-    pageLoad();
+    sleep(500).then(pageLoad());
 })
 
 $(document).on("click", ".order-cancel", function(e){
@@ -507,6 +582,11 @@ $(document).on("click", ".order-cancel", function(e){
     console.log(slicedId)
     deleteOrderById(slicedId)
     sleep(500).then(pageLoad())
+})
+
+$(document).on("click", ".toggle-monitor", function(){
+    monitor();
+    $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
 })
 
 pageLoad();

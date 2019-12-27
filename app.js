@@ -1,6 +1,4 @@
 // TODO: 
-// research tab, tab behavior, 
-// intervals to check orders to re-ping and re-pong,
 // equity chart, 
 
 const apiKey = keys.apiKey;
@@ -152,7 +150,7 @@ const checkPositionsBySymbol = (symbol)=>{
 }
 
 // POST functions
-const createOrder = (sym, pingOrPong)=>{
+const createOrder = (sym)=>{
     let symbol = sym.toUpperCase();
     let url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${AVKey}`
     $.ajax({
@@ -165,16 +163,11 @@ const createOrder = (sym, pingOrPong)=>{
         let firstOrderPrice = response["Global Quote"]["05. price"];
         // if we are selling, add a little to current price before starting the process,
         // else if we are buying, just use current price.
-        let workingPrice;
-        if (pingOrPong === "pong") {
-            workingPrice = parseFloat(firstOrderPrice) + 0.02 
-        } else {
-            workingPrice = parseFloat(firstOrderPrice);
-        }
+        let workingPrice = parseFloat(firstOrderPrice);
         let data = {
             'symbol': symbol,
             'qty': 100,
-            'side': (pingOrPong === "ping") ? "buy" : "sell",
+            'side': "buy",
             'type': "limit",
             'time_in_force': "gtc",
             "limit_price": workingPrice.toString()
@@ -191,23 +184,12 @@ const createOrder = (sym, pingOrPong)=>{
             // returns object
             console.log("Create Orders:")
             console.log(response)
-            pageLoad();
             sleep(500)
-            if (pingOrPong === "ping"){
-                for (let x=1;x<=10;x+=1){
-                    let price1 = workingPrice;
-                    price1 = price1-(0.02*x)
-                    createBuyLimits(symbol, price1.toString());
-                    sleep(500)
-                }
-            }
-            if (pingOrPong === "pong"){
-                for(let y=1;y<=10;y+=1){
-                    let price2 = workingPrice;
-                    price2 = price2+(0.02*y)
-                    createSellLimits(symbol, price2.toString())
-                    sleep(500)
-                }
+            for (let x=0;x<9;x+=1){
+                let price1 = workingPrice;
+                price1 = price1-(0.02*x)
+                createBuyLimits(symbol, price1.toString());
+                sleep(500)
             }
             pageLoad();
         })
@@ -387,15 +369,19 @@ const sleep = (milliseconds) => {
 }
 
 const monitor = ()=>{
+    let rateLimiter;
     checkPositions().then((response)=>{
         if (!response.length){
+            console.log("No orders found. Try again in 3 seconds...")
             setTimeout(monitor, 3000)
+            return false
         } else {
             console.log("Monitor positions:")
             console.log(response)
             response.forEach((el)=>{
                 let shares = el.qty;
                 let numOfOrders = shares / 100;
+                rateLimiter = numOfOrders;
                 console.log("num of orders:")
                 console.log(numOfOrders)
                 let x = 1
@@ -422,7 +408,6 @@ const monitor = ()=>{
                         // returns object
                         console.log("Create sells:")
                         console.log(response)
-                        pageLoad();
                     }).catch((err)=>{
                         console.log("error:")
                         console.log(err)
@@ -430,7 +415,15 @@ const monitor = ()=>{
                     x+=1
                 }
             })
-            setTimeout(monitor, 5000)
+            pageLoad();
+            // alpaca has a 200 requests per min limit, 
+            // so these are there to respect that
+            // to keep the calls from failing
+            if (rateLimiter > 10){
+                setTimeout(monitor, 7000)
+            } else {
+                setTimeout(monitor, 5000)
+            }
         }
     })
 }
@@ -459,7 +452,6 @@ $(document).on("click", ".new-ping", function(){
             $(".buttons").html(`
                 <h2>Controls</h2>
                 <button class="new-ping">New Ping</button>
-                <button class="new-pong">New Pong</button>
                 <button class="clear-pending">Clear Pending Orders</button>
                 <button class="toggle-monitor">Toggle Monitor</button>
             `)
@@ -468,7 +460,6 @@ $(document).on("click", ".new-ping", function(){
             $(".buttons").html(`
                 <h2>Controls</h2>
                 <button class="new-ping">New Ping</button>
-                <button class="new-pong">New Pong</button>
                 <button class="clear-pending">Clear Pending Orders</button>
                 <button class="toggle-monitor">Toggle Monitor</button>
             `)
@@ -482,69 +473,12 @@ $(document).on("click", ".new-ping", function(){
         $(".buttons").html(`
             <h2>Controls</h2>
             <button class="new-ping">New Ping</button>
-            <button class="new-pong">New Pong</button>
             <button class="clear-pending">Clear Pending Orders</button>
             <button class="toggle-monitor">Toggle Monitor</button>
         `)
         $(".status-msg").html(`
             No New Pings Created.
         `)
-    })
-})
-
-// create sell orders
-$(document).on("click", ".new-pong", function(){
-    $(".buttons").html(`
-        <h2>Create a new Pong</h2>
-        <label for="pong-symbol">Symbol:<br>
-            <input autofocus type="text" name="pong-symbol" id="pong-symbol" autocomplete="off">
-        </label> 
-        <button class="submit-pong">Create</button>
-        <button class="cancel-pong">Cancel</button>
-    `)
-
-    $("#pong-symbol").focus();
-
-    $(".submit-pong").on("click", function(){
-        let symbol = $("#pong-symbol").val().toUpperCase();
-        if (symbol){
-            createOrder(symbol, "pong");
-            $(".status-msg").html(`
-                Pong Created for ${symbol}.
-            `)
-            $(".buttons").html(`
-                <h2>Controls</h2>
-                <button class="new-ping">New Ping</button>
-                <button class="new-pong">New Pong</button>
-                <button class="clear-pending">Clear Pending Orders</button>
-                <button class="toggle-monitor">Toggle Monitor</button>
-            `)
-        }
-        else {
-            $(".buttons").html(`
-                <h2>Controls</h2>
-                <button class="new-ping">New Ping</button>
-                <button class="new-pong">New Pong</button>
-                <button class="clear-pending">Clear Pending Orders</button>
-                <button class="toggle-monitor">Toggle Monitor</button>
-            `)
-            $(".status-msg").html(`
-                No New Pongs Created.
-            `)
-        }
-    })
-
-    $(".cancel-pong").on("click", function(){
-            $(".buttons").html(`
-                <h2>Controls</h2>
-                <button class="new-ping">New Ping</button>
-                <button class="new-pong">New Pong</button>
-                <button class="clear-pending">Clear Pending Orders</button>
-                <button class="toggle-monitor">Toggle Monitor</button>
-            `)
-            $(".status-msg").html(`
-                No New Pongs Created.
-            `)
     })
 })
 

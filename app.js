@@ -187,7 +187,7 @@ const createOrder = (sym)=>{
             sleep(500)
             for (let x=0;x<9;x+=1){
                 let price1 = workingPrice;
-                price1 = price1-(0.02*x)
+                price1 = price1-(0.01*x)
                 createBuyLimits(symbol, price1.toString());
                 sleep(500)
             }
@@ -387,31 +387,9 @@ const monitor = ()=>{
                 let x = 1
                 while (x <= numOfOrders) {
                     let symbol = el.symbol;
-                    let minSalePrice = el.avg_entry_price;    
-                    let data = {
-                        'symbol': symbol,
-                        'qty': 100,
-                        'side': "sell",
-                        'type': "limit",
-                        'time_in_force': "gtc",
-                        'limit_price': minSalePrice = (parseFloat(minSalePrice)+(0.02*x)).toString()
-                    }
-                    $.ajax({
-                        method: 'POST',
-                        url: `${ordersUrl}`,
-                        contentType: 'application/json',
-                        dataType: 'json',
-                        processData: false,
-                        data: JSON.stringify(data),
-                        headers: headers
-                    }).then(function (response){
-                        // returns object
-                        console.log("Create sells:")
-                        console.log(response)
-                    }).catch((err)=>{
-                        console.log("error:")
-                        console.log(err)
-                    })
+                    let minSalePrice = el.avg_entry_price; 
+                    minSalePrice = (parseFloat(minSalePrice)+(0.01*x)).toString()   
+                    createSellLimits(symbol, minSalePrice)
                     x+=1
                 }
             })

@@ -341,7 +341,7 @@ const sellPositionBySymbol = (symbol)=>{
     }
     $.ajax({
         method: 'DELETE',
-        url: `${ordersUrl}/${symbol}`,
+        url: `${positionsUrl}/${symbol}`,
         contentType: 'application/json',
         dataType: 'json',
         processData: false,
@@ -352,6 +352,10 @@ const sellPositionBySymbol = (symbol)=>{
         console.log("Sell Position by ID:")
         console.log(response)
         pageLoad();
+    }).catch((err)=>{
+        console.log(err)
+        pageLoad();
+        return err
     })
 }
 
@@ -491,8 +495,10 @@ $(document).on("click", ".refresh", function(){
 })
 
 $(document).on("click", ".position-cancel", function(e){
-    let idString = e.target.classList[1]
-    let slicedId = idString.replace("id-", '')
+    let symbol = e.target.parentNode.children[0].innerText
+    console.log(symbol)
+    sellPositionBySymbol(symbol);
+    pageLoad();
 })
 
 $(document).on("click", ".order-cancel", function(e){

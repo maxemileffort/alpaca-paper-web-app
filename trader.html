@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Show Me the Money</title>
+    <title>Ping Pong</title>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
     <header>
         <section class="top-bar">
-            <h1 class="title">Show Me the Money</h1>
+            <h1 class="title">Ping Pong</h1>
             <div class="menu">
                 <ul class="menu-list">
                     <a class="menu-link active-link" href="#"><li class="menu-item">Overview</li></a>
@@ -40,21 +40,10 @@
                 <ul class="positions-list">
                     <li class="column-headers">
                         <p>Symbol</p>
-                        <p>Profit/Loss</p>
+                        <p>Price</p>
                         <p>Shares</p>
+                        <p>Profit/Loss</p>
                         <p>Sell</p>
-                    </li>
-                    <li class="position">
-                        <span class="position-symbol">F</span>
-                        <span class="position-pl">0.5</span>
-                        <span class="position-shares">10</span>
-                        <span class="position-cancel">X</span>
-                    </li>
-                    <li class="position">
-                        <span class="position-symbol">S</span>
-                        <span class="position-pl">23.5</span>
-                        <span class="position-shares">20</span>
-                        <span class="position-cancel">X</span>
                     </li>
                 </ul>
             </div>
@@ -64,20 +53,9 @@
                     <li class="column-headers">
                         <p>Symbol</p>
                         <p>Side</p>
+                        <p>Price</p>
                         <p>Shares</p>
                         <p>Cancel</p>
-                    </li>
-                    <li class="order">
-                        <span class="order-symbol">F</span>
-                        <span class="order-side">Buy</span>
-                        <span class="order-shares">10</span>
-                        <span class="order-cancel">X</span>
-                    </li>
-                    <li class="order">
-                        <span class="order-symbol">S</span>
-                        <span class="order-price">4.6</span>
-                        <span class="order-shares">20</span>
-                        <span class="order-cancel">X</span>
                     </li>
                 </ul>
             </div>
@@ -85,7 +63,9 @@
         <section id="right-sidebar">
             <div class="buttons">
                 <h2>Controls</h2>
-                <button class="new-ping-pong">New Ping Pong</button>
+                <button class="new-ping">New Ping</button>
+                <button class="new-pong">New Pong</button>
+                <button class="clear-pending">Clear Pending Orders</button>
             </div>
         </section>
     </main>
@@ -96,9 +76,6 @@
             <input id="fileSelect" type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />  
         </div>
     </section>
-    <footer>
-        <h2>Footer</h2>
-    </footer>
     <script
         src="https://code.jquery.com/jquery-3.4.1.js"
         integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="

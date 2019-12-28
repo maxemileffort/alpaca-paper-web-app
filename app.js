@@ -398,12 +398,101 @@ const monitor = ()=>{
             // so these are there to respect that
             // to keep the calls from failing
             if (rateLimiter > 10){
-                setTimeout(monitor, 7000)
+                setTimeout(monitor, 5000+1000*rateLimiter/3)
             } else {
                 setTimeout(monitor, 5000)
             }
         }
     })
+}
+
+const streamTrades =  (status)=>{
+    let socket;
+    if (status === 'turn on'){
+        socket = new WebSocket("wss://paper-api.alpaca.markets/stream/")
+    
+        let subscribeData = {
+            "action": "listen",
+            "data": {
+                "streams": ["trade_updates", "account_updates"]
+            }
+        }
+        
+        let authData = {
+            "action": "authenticate",
+            "data": {
+                "key_id": apiKey,
+                "secret_key": secretKey
+            }
+        }
+
+        socket.onopen = function(event) {
+            console.log(event)
+            socket.send(authData)
+        };
+        
+        socket.onmessage = function(msg) {
+            console.log(msg)
+            let stream = msg.stream
+            let data = msg.data
+            switch(stream){
+                // recieve account updates
+                case "account_updates":
+                    console.log("Received account updates:")
+                    console.log(data)
+                    break;
+                // recieve trade updates
+                case "trade_updates":
+                    console.log("Received trade updates:")
+                    console.log(data)
+                    break;
+                // in case it sends a msg with both???
+                case ["trade_updates", "account_updates"] || ["account_updates", "trade_updates"]:
+                    console.log("Received multiple types of updates:")
+                    console.log(data)
+                    break;
+                // confirm subscription to data stream
+                case "listening":
+                    console.log("Watching for trade and account updates...")
+                    console.log(data)
+                    break;
+                // auth
+                case "authorization":
+                    console.log("Auth status:")
+                    console.log(data.status)
+                    // if auth is ok, subscribe to trade updates and account updates
+                    if (data.status === "authorized"){
+                        socket.send(subscribeData)
+                    }
+                    // else try to login a few times, and if those fail, close the socket
+                    else {
+                        let x = 0
+                        if (x<3){
+                            while (x<3){
+                                socket.send(authData)
+                                x+=1
+                            }
+                        } else {
+                            console.log("Socket closed: could not authorize.")
+                            socket.close()
+                        }
+                    }
+                    break;
+                default:
+                    console.log("Unrecognized message.")
+            }
+        };
+        
+        socket.onclose = function(msg){
+            console.log("Closed the socket.")
+            console.log(msg)
+        }
+    } else if (socket && status === "turn off"){
+        socket.close()
+    }
+    
+
+    
 }
 
 // App logic & interaction
@@ -462,7 +551,8 @@ $(document).on("click", ".new-ping", function(){
 
 $(document).on("click", ".clear-pending", function(){
     deleteAllOrders();
-    sleep(500).then(pageLoad())
+    sleep(100)
+    pageLoad()
 })
 
 $(document).on("click", ".menu-link", function(e){
@@ -485,7 +575,8 @@ $(document).on("click", ".position-cancel", function(e){
     let symbol = e.target.parentNode.children[0].innerText
     console.log(symbol)
     sellPositionBySymbol(symbol);
-    sleep(500).then(pageLoad());
+    sleep(100)
+    pageLoad();
 })
 
 $(document).on("click", ".order-cancel", function(e){
@@ -493,12 +584,23 @@ $(document).on("click", ".order-cancel", function(e){
     let slicedId = idString.replace("id-", '')
     console.log(slicedId)
     deleteOrderById(slicedId)
-    sleep(500).then(pageLoad())
+    sleep(500)
+    pageLoad()
 })
 
+let toggle = "off";
+
 $(document).on("click", ".toggle-monitor", function(){
-    monitor();
-    $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
+    // monitor();
+    if(toggle === "off"){
+        streamTrades("turn on");
+        toggle = "on";
+        $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
+    } else if (toggle === "on"){
+        streamTrades("turn off");
+        toggle = "off"
+        $(".status-msg").html("<h1>Monitor paused. Click that same button again to resume.</h1>")
+    }
 })
 
 pageLoad();

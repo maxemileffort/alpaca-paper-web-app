@@ -380,7 +380,7 @@ const monitor = ()=>{
             console.log(response)
             response.forEach((el)=>{
                 let shares = el.qty;
-                let numOfOrders = shares / 100;
+                let numOfOrders = Math.round(shares / 100) ;
                 rateLimiter = numOfOrders;
                 console.log("num of orders:")
                 console.log(numOfOrders)
@@ -487,7 +487,7 @@ const streamTrades =  (status)=>{
             console.log("Closed the socket.")
             console.log(msg)
         }
-    } else if (socket && status === "turn off"){
+    } else if (status === "turn off"){
         socket.close()
     }
     

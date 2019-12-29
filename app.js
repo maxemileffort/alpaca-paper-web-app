@@ -395,18 +395,14 @@ const monitor = ()=>{
             })
             pageLoad();
             // alpaca has a 200 requests per min limit, 
-            // so these are there to respect that
+            // so this forces us to respect that
             // to keep the calls from failing
-            if (rateLimiter > 10){
-                setTimeout(monitor, 5000+1000*rateLimiter/3)
-            } else {
-                setTimeout(monitor, 5000)
-            }
+            setTimeout(monitor, 1000+1000*rateLimiter/3)
         }
     })
 }
 
-const streamTrades =  (status)=>{
+async function streamTrades (status){
     let socket;
     if (status === 'turn on'){
         socket = new WebSocket("wss://paper-api.alpaca.markets/stream/")
@@ -429,6 +425,8 @@ const streamTrades =  (status)=>{
         socket.onopen = function(event) {
             console.log(event)
             socket.send(authData)
+            socket.send(subscribeData)
+            console.log("Sent authData!")
         };
         
         socket.onmessage = function(msg) {
@@ -482,6 +480,11 @@ const streamTrades =  (status)=>{
                     console.log("Unrecognized message.")
             }
         };
+
+        socket.onerror = function(err){
+            console.log("There was an error:")
+            console.log(err)
+        }
         
         socket.onclose = function(msg){
             console.log("Closed the socket.")
@@ -490,9 +493,6 @@ const streamTrades =  (status)=>{
     } else if (status === "turn off"){
         socket.close()
     }
-    
-
-    
 }
 
 // App logic & interaction

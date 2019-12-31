@@ -1,5 +1,7 @@
 // TODO: 
-// equity chart, 
+// equity chart, check for shortable before creating orders,
+// use watchlist to monitor buy orders, trade history for analytics,
+// websocket
 
 const apiKey = keys.apiKey;
 const secretKey = keys.secretKey;
@@ -13,6 +15,11 @@ const headers = {
     'APCA-API-KEY-ID': apiKey,
     'APCA-API-SECRET-KEY': secretKey
 };
+
+// for monitor function
+let toggle = "off";
+let marketOpen;
+let watchList = [''];
 
 // API functions
 // GET functions
@@ -79,6 +86,31 @@ const checkOrders = ()=>{
     })
 }
 
+const checkOrdersBySymbol = (watchListSymbol)=>{
+    return new Promise((resolve, reject)=>{
+        $.ajax({
+            method: 'GET',
+            url: ordersUrl,
+            contentType: 'application/json',
+            headers: headers
+        }).then(function (response){
+            // returns array of objects
+            // console.log("Check Orders:")
+            // console.log(response)
+            
+            response.forEach(function(el){
+                let symbol = el.symbol;
+                let side = el.side.toUpperCase();
+                let price = el.limit_price;
+                let qty = el.qty;
+                let id = el.id;
+            })
+            resolve(response)
+        }).catch(()=>{reject("Failed to check orders.")})
+        
+    })
+}
+
 const checkPositions = ()=>{
     return new Promise((resolve, reject)=>{
         $.ajax({
@@ -96,7 +128,7 @@ const checkPositions = ()=>{
                 <p>Price</p>
                 <p>Shares</p>
                 <p>Profit/Loss</p>
-                <p>Sell</p>
+                <p>Close</p>
             </li>`
             response.forEach(function(el){
                 let assetId = el.asset_id;
@@ -184,12 +216,10 @@ const createOrder = (sym)=>{
             // returns object
             console.log("Create Orders:")
             console.log(response)
-            sleep(500)
             for (let x=0;x<9;x+=1){
                 let price1 = workingPrice;
                 price1 = price1-(0.01*x)
                 createBuyLimits(symbol, price1.toString());
-                sleep(500)
             }
             pageLoad();
         })
@@ -362,47 +392,138 @@ const pageLoad = ()=>{
     getAccount();
     checkOrders();
     checkPositions();
+    renderWatchlist();
 }
 
 const sleep = (milliseconds) => {
     return new Promise(resolve => setTimeout(resolve, milliseconds))
 }
 
-const monitor = ()=>{
-    let rateLimiter;
-    checkPositions().then((response)=>{
-        if (!response.length){
-            console.log("No orders found. Try again in 3 seconds...")
-            setTimeout(monitor, 3000)
-            return false
-        } else {
-            console.log("Monitor positions:")
-            console.log(response)
-            response.forEach((el)=>{
-                let shares = el.qty;
-                let numOfOrders = Math.round(shares / 100) ;
-                rateLimiter = numOfOrders;
-                console.log("num of orders:")
-                console.log(numOfOrders)
-                let x = 1
-                while (x <= numOfOrders) {
-                    let symbol = el.symbol;
-                    let minSalePrice = el.avg_entry_price; 
-                    minSalePrice = (parseFloat(minSalePrice)+(0.01*x)).toString()   
-                    createSellLimits(symbol, minSalePrice)
-                    x+=1
-                }
-            })
-            pageLoad();
-            // alpaca has a 200 requests per min limit, 
-            // so this forces us to respect that
-            // to keep the calls from failing
-            setTimeout(monitor, 1000+1000*rateLimiter/3)
-        }
-    })
+const timeStamper = ()=>{
+    const d = Date.now();
+    let timeCalc = new Date(d)
+    let day = timeCalc.getDay();
+    switch(day){
+        case 0:
+            day = "Sunday"
+            break;
+        case 1:
+            day = "Monday"
+            break;
+        case 2:
+            day = "Tuesday"
+            break;
+        case 3:
+            day = "Wednesday"
+            break;
+        case 4:
+            day = "Thursday"
+            break;
+        case 5:
+            day = "Friday"
+            break;
+        case 6:
+            day = "Saturday"
+            break;
+        default:
+            day = "Today"
+    }
+    let Hh = timeCalc.getHours();
+    let minutes= timeCalc.getMinutes();
+    let secs = timeCalc.getSeconds();
+    console.log("Time calc:")
+    console.log(`${day}, ${Hh}:${minutes}:${secs}`)
+    let timeData = {
+        timeString: `${day}, ${Hh}:${minutes}:${secs}`,
+        timeArray: [day, Hh, minutes, secs]
+    }
+    console.log(timeData)
+    return timeData
 }
 
-async function streamTrades (status){
+const marketOpenCheck = ()=>{
+    const timeCheck = timeStamper();
+    console.log(timeCheck)
+    let timeString = timeCheck.timeString
+    let day = timeCheck.timeArray[0]
+    let hour = timeCheck.timeArray[1]
+    let minute = timeCheck.timeArray[2]
+    let sec = timeCheck.timeArray[3]
+    console.log(timeString)
+    // check day
+    if(day === "Saturday" || day === "Sunday"){
+        $(".status-msg").html("<h1>Market is Closed today!</h1>")
+        // check every 6 hours to see what day it is
+        setTimeout(marketOpenCheck, 2.16e7)
+        // if day is ok, check the time every minute
+    } else {
+        if (hour >= 8 && hour < 15){
+            // for 8 am, minutes needs to be 30 or higher
+            // doesn't matter the rest of the time
+            if (hour === 8 && minute >= 30){
+                monitor(toggle)
+            } else {
+                monitor(toggle)
+            }
+        } else {
+            monitor("off")
+            $(".status-msg").html("<h1>Market is Closed right now!</h1>")
+            sleep(60000).then(()=>{
+                marketOpenCheck()
+            })
+        }
+    }
+}
+
+let timeoutId;
+const monitor = (status)=>{
+    let rateLimiter = 0;
+    if (status === "on"){
+        checkPositions().then((response)=>{
+            if (response.length === "0"){
+                console.log("No orders found. Try again in 3 seconds...")
+                sleep(3000).then(()=>{monitor(toggle)})
+                return false
+            } else {
+                console.log("Monitor positions:")
+                console.log(response)
+                response.forEach((el)=>{
+                    let shares = el.qty;
+                    let symbol = el.symbol;
+                    let minSalePrice = el.avg_entry_price; 
+                    let numOfOrders = Math.abs(Math.round(shares / 100) );
+                    // to prevent massive amounts of short orders,
+                    // immediately cancel orders with negative shares
+                    if(shares < 0){
+                        sellPositionBySymbol(symbol)
+                    } else {
+                        rateLimiter += numOfOrders;
+                        console.log("num of orders:")
+                        console.log(numOfOrders)
+                        let x = 1
+                        while (x <= numOfOrders) {
+                            minSalePrice = (parseFloat(minSalePrice)+(0.01*x)).toString()   
+                            createSellLimits(symbol, minSalePrice)
+                            x+=1
+                        }
+                    }
+                })
+                pageLoad();
+                // alpaca has a 200 requests per min limit, 
+                // so this forces us to respect that
+                // to keep the calls from failing
+                let waitTime = Math.round(2000+(1000*(rateLimiter/3.5)))
+                console.log("Checking again in "+ waitTime/1000 + " secs...")
+                timeoutId = setTimeout(marketOpenCheck, waitTime)
+            }
+        })
+    } else if (status === "off"){
+        clearTimeout(timeoutId)
+        return false
+    }
+}
+
+const streamTrades = (status)=>{
     let socket;
     if (status === 'turn on'){
         socket = new WebSocket("wss://paper-api.alpaca.markets/stream/")
@@ -484,6 +605,7 @@ async function streamTrades (status){
         socket.onerror = function(err){
             console.log("There was an error:")
             console.log(err)
+            socket.close()
         }
         
         socket.onclose = function(msg){
@@ -494,6 +616,21 @@ async function streamTrades (status){
         socket.close()
     }
 }
+
+const renderWatchlist = ()=>{
+    let htmlToAppend = '';
+    watchList.forEach((el)=>{
+        console.log(el)
+        htmlToAppend += `<li class="watch-item">${el}</li>`
+    })
+    $(".watchlist").html(`
+        <h2>Watchlist</h2>
+        <ul>
+            ${htmlToAppend}
+        </ul>
+    `)
+}
+
 
 // App logic & interaction
 // create buy orders
@@ -511,6 +648,8 @@ $(document).on("click", ".new-ping", function(){
 
     $(".submit-ping").on("click", function(){
         let symbol = $("#ping-symbol").val().toUpperCase();
+        watchList.push(symbol);
+        renderWatchlist();
         if (symbol){
             createOrder(symbol, "ping");
             $(".status-msg").html(`
@@ -519,16 +658,16 @@ $(document).on("click", ".new-ping", function(){
             $(".buttons").html(`
                 <h2>Controls</h2>
                 <button class="new-ping">New Ping</button>
-                <button class="clear-pending">Clear Pending Orders</button>
                 <button class="toggle-monitor">Toggle Monitor</button>
+                <button class="clear-pending">Clear Pending Orders</button>
             `)
         }
         else {
             $(".buttons").html(`
                 <h2>Controls</h2>
                 <button class="new-ping">New Ping</button>
-                <button class="clear-pending">Clear Pending Orders</button>
                 <button class="toggle-monitor">Toggle Monitor</button>
+                <button class="clear-pending">Clear Pending Orders</button>
             `)
             $(".status-msg").html(`
                 No New Pings Created.
@@ -540,8 +679,8 @@ $(document).on("click", ".new-ping", function(){
         $(".buttons").html(`
             <h2>Controls</h2>
             <button class="new-ping">New Ping</button>
-            <button class="clear-pending">Clear Pending Orders</button>
             <button class="toggle-monitor">Toggle Monitor</button>
+            <button class="clear-pending">Clear Pending Orders</button>
         `)
         $(".status-msg").html(`
             No New Pings Created.
@@ -551,8 +690,9 @@ $(document).on("click", ".new-ping", function(){
 
 $(document).on("click", ".clear-pending", function(){
     deleteAllOrders();
-    sleep(100)
-    pageLoad()
+    sleep(100).then(()=>{
+        pageLoad()
+    })
 })
 
 $(document).on("click", ".menu-link", function(e){
@@ -575,8 +715,9 @@ $(document).on("click", ".position-cancel", function(e){
     let symbol = e.target.parentNode.children[0].innerText
     console.log(symbol)
     sellPositionBySymbol(symbol);
-    sleep(100)
-    pageLoad();
+    sleep(100).then(()=>{
+        pageLoad()
+    })
 })
 
 $(document).on("click", ".order-cancel", function(e){
@@ -584,21 +725,29 @@ $(document).on("click", ".order-cancel", function(e){
     let slicedId = idString.replace("id-", '')
     console.log(slicedId)
     deleteOrderById(slicedId)
-    sleep(500)
-    pageLoad()
+    sleep(100).then(()=>{
+        pageLoad()
+    })
 })
 
-let toggle = "off";
 
 $(document).on("click", ".toggle-monitor", function(){
-    // monitor();
+//     if(toggle === "off"){
+//         streamTrades("turn on");
+//         toggle = "on";
+//         $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
+//     } else if (toggle === "on"){
+//         streamTrades("turn off");
+//         toggle = "off"
+//         $(".status-msg").html("<h1>Monitor paused. Click that same button again to resume.</h1>")
+//     }
     if(toggle === "off"){
-        streamTrades("turn on");
+        marketOpenCheck();
         toggle = "on";
         $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
     } else if (toggle === "on"){
-        streamTrades("turn off");
         toggle = "off"
+        marketOpenCheck();
         $(".status-msg").html("<h1>Monitor paused. Click that same button again to resume.</h1>")
     }
 })

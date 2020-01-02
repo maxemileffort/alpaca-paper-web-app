@@ -7,6 +7,8 @@
 body {
     color: white;
     background-color: #333333;
+    display: flex;
+    flex-direction: column;
 }
 
 header {
@@ -50,6 +52,10 @@ button {
 
 button:hover{
     background-color: #5DA9DD;
+}
+
+span{
+    width: 3%;
 }
 
 #account {

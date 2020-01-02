@@ -1,7 +1,6 @@
 // TODO: 
-// equity chart, check for shortable before creating orders,
-// use watchlist to monitor buy orders, trade history for analytics,
-// websocket
+// equity chart, use watchlist to monitor buy orders, 
+// trade history for analytics, websocket
 
 const apiKey = keys.apiKey;
 const secretKey = keys.secretKey;
@@ -11,6 +10,7 @@ const baseUrl = 'https://paper-api.alpaca.markets';
 const ordersUrl = `${baseUrl}/v2/orders`;
 const positionsUrl = `${baseUrl}/v2/positions`;
 const accountUrl = `${baseUrl}/v2/account`;
+const barsUrl = `https://data.alpaca.markets/v1/bars/`
 const headers = {
     'APCA-API-KEY-ID': apiKey,
     'APCA-API-SECRET-KEY': secretKey
@@ -19,7 +19,7 @@ const headers = {
 // for monitor function
 let toggle = "off";
 let marketOpen;
-let watchList = [''];
+let watchList = ["AES", "S", "SORL", "F", "TTM", "CNP"];
 
 // API functions
 // GET functions
@@ -218,20 +218,20 @@ const createOrder = (sym)=>{
             console.log(response)
             for (let x=0;x<9;x+=1){
                 let price1 = workingPrice;
-                price1 = price1-(0.01*x)
+                price1 = price1-(0.02*x)
                 createBuyLimits(symbol, price1.toString());
             }
             pageLoad();
         })
-        }).catch((err)=>{
-            console.log(err)
-            return err
-        })
+    }).catch((err)=>{
+        console.log(err)
+        return err
+    })
 }
 
 const createBuyLimits = (sym, price)=>{
     let symbol = sym.toUpperCase();
-
+    
     let data = {
         'symbol': symbol,
         'qty': 100,
@@ -240,9 +240,9 @@ const createBuyLimits = (sym, price)=>{
         'time_in_force': "gtc",
         'limit_price': price
     }
-
+    
     // console.log(data)
-
+    
     $.ajax({
         method: 'POST',
         url: `${ordersUrl}`,
@@ -260,7 +260,7 @@ const createBuyLimits = (sym, price)=>{
 
 const createSellLimits = (sym, price)=>{
     let symbol = sym.toUpperCase();
-
+    
     let data = {
         'symbol': symbol,
         'qty': 100,
@@ -269,9 +269,9 @@ const createSellLimits = (sym, price)=>{
         'time_in_force': "gtc",
         'limit_price': price
     }
-
+    
     // console.log(data)
-
+    
     $.ajax({
         method: 'POST',
         url: `${ordersUrl}`,
@@ -290,7 +290,7 @@ const createSellLimits = (sym, price)=>{
 // PATCH functions
 const updateOrder = (orderId, sym, shares, side, tradeType, timeInForce)=>{
     let symbol = sym.toUpperCase();
-
+    
     data = {
         'symbol': symbol,
         'qty': shares,
@@ -298,7 +298,7 @@ const updateOrder = (orderId, sym, shares, side, tradeType, timeInForce)=>{
         'type': tradeType,
         'time_in_force': timeInForce
     }
-
+    
     $.ajax({
         method: 'PATCH',
         url: `${ordersUrl}/${orderId}`,
@@ -392,7 +392,6 @@ const pageLoad = ()=>{
     getAccount();
     checkOrders();
     checkPositions();
-    renderWatchlist();
 }
 
 const sleep = (milliseconds) => {
@@ -502,7 +501,7 @@ const monitor = (status)=>{
                         console.log(numOfOrders)
                         let x = 1
                         while (x <= numOfOrders) {
-                            minSalePrice = (parseFloat(minSalePrice)+(0.01*x)).toString()   
+                            minSalePrice = (parseFloat(minSalePrice)+(0.02*x)).toString()   
                             createSellLimits(symbol, minSalePrice)
                             x+=1
                         }
@@ -527,7 +526,7 @@ const streamTrades = (status)=>{
     let socket;
     if (status === 'turn on'){
         socket = new WebSocket("wss://paper-api.alpaca.markets/stream/")
-    
+        
         let subscribeData = {
             "action": "listen",
             "data": {
@@ -542,7 +541,7 @@ const streamTrades = (status)=>{
                 "secret_key": secretKey
             }
         }
-
+        
         socket.onopen = function(event) {
             console.log(event)
             socket.send(authData)
@@ -601,7 +600,7 @@ const streamTrades = (status)=>{
                     console.log("Unrecognized message.")
             }
         };
-
+        
         socket.onerror = function(err){
             console.log("There was an error:")
             console.log(err)
@@ -617,20 +616,84 @@ const streamTrades = (status)=>{
     }
 }
 
-const renderWatchlist = ()=>{
-    let htmlToAppend = '';
-    watchList.forEach((el)=>{
-        console.log(el)
-        htmlToAppend += `<li class="watch-item">${el}</li>`
-    })
+const createWatchlist = ()=>{
     $(".watchlist").html(`
         <h2>Watchlist</h2>
-        <ul>
-            ${htmlToAppend}
+        <ul class="list-of-symbols">
+            <li class="column-headers">
+                <p>Symbol</p>
+                <p>1D Ago</p>
+                <p>7D Ago</p>
+                <p>14D Ago</p>
+                <p>28D Ago</p>
+                <p>Remove</p>
+            </li>
         </ul>
     `)
+
+    getWatchlist(watchList)
+
+    return null
+    
 }
 
+const getWatchlist = (arr)=>{
+    let dynamicHtml;
+    arr.forEach((el)=>{
+        let x = 1;
+        let el7d, el14d, el28d, current;
+        let high, low, open, close;
+        $.ajax({
+            method: 'GET',
+            url: `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${el}&apikey=${AVKey}`,
+            // contentType: 'application/json',
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            dataType: 'json'
+        }).then((response)=>{
+            let timeSeries = Object.entries(response['Time Series (Daily)'])
+            timeSeries.forEach(stock=>{
+                high = parseFloat(stock[1]["2. high"])
+                low = parseFloat(stock[1]["3. low"])
+                open = parseFloat(stock[1]["1. open"])
+                close = parseFloat(stock[1]["4. close"])
+                let avg = (high + low + open + close) / 4
+                avg = avg.toFixed(2)
+                console.log(`${el} had an avg of ${avg} ${x} day(s) ago.`)
+                switch(x){
+                    case 1:
+                        current = avg
+                        break;
+                    case 7:
+                        el7d = avg;
+                        break;
+                    case 14:
+                        el14d = avg;
+                        break;
+                    case 28:
+                        el28d = avg;
+                        break;
+                    default:
+                        break;
+                }
+                dynamicHtml = `<li class="watch-item"><span class="watch-symbol">${el}</span>`
+                dynamicHtml += `<span class="watch-price">${current}</span>`
+                dynamicHtml += `<span class="watch-7d">${el7d}</span>`
+                dynamicHtml += `<span class="watch-14d">${el14d}</span>`
+                dynamicHtml += `<span class="watch-28d">${el28d}</span>`
+                dynamicHtml += `<span class="watch-remove">X</span></li>`
+                // console.log(dynamicHtml)
+                x++
+            })
+            renderWatchlist(dynamicHtml)
+        }).catch(err=>{
+            console.log(err)
+        })
+    })
+}
+
+const renderWatchlist = (html)=>{
+    $(".list-of-symbols").append(`${html}`)
+}
 
 // App logic & interaction
 // create buy orders
@@ -643,15 +706,15 @@ $(document).on("click", ".new-ping", function(){
         <button class="submit-ping">Create</button>
         <button class="cancel-ping">Cancel</button>
     `)
-
+    
     $("#ping-symbol").focus();
-
+    
     $(".submit-ping").on("click", function(){
         let symbol = $("#ping-symbol").val().toUpperCase();
         watchList.push(symbol);
         renderWatchlist();
         if (symbol){
-            createOrder(symbol, "ping");
+            createOrder(symbol);
             $(".status-msg").html(`
                 Ping Created for ${symbol}.
             `)
@@ -674,7 +737,7 @@ $(document).on("click", ".new-ping", function(){
             `)
         }
     })
-
+    
     $(".cancel-ping").on("click", function(){
         $(".buttons").html(`
             <h2>Controls</h2>
@@ -732,18 +795,18 @@ $(document).on("click", ".order-cancel", function(e){
 
 
 $(document).on("click", ".toggle-monitor", function(){
-//     if(toggle === "off"){
-//         streamTrades("turn on");
-//         toggle = "on";
-//         $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
-//     } else if (toggle === "on"){
-//         streamTrades("turn off");
-//         toggle = "off"
-//         $(".status-msg").html("<h1>Monitor paused. Click that same button again to resume.</h1>")
-//     }
+    //     if(toggle === "off"){
+    //         streamTrades("turn on");
+    //         toggle = "on";
+    //         $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
+    //     } else if (toggle === "on"){
+    //         streamTrades("turn off");
+    //         toggle = "off"
+    //         $(".status-msg").html("<h1>Monitor paused. Click that same button again to resume.</h1>")
+    //     }
     if(toggle === "off"){
-        marketOpenCheck();
         toggle = "on";
+        marketOpenCheck();
         $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
     } else if (toggle === "on"){
         toggle = "off"

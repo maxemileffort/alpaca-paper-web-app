@@ -1,6 +1,6 @@
 // TODO: 
 // equity chart, use watchlist to monitor buy orders, 
-// trade history for analytics, websocket
+// websocket, research symbols
 
 const apiKey = keys.apiKey;
 const secretKey = keys.secretKey;
@@ -10,7 +10,6 @@ const baseUrl = 'https://paper-api.alpaca.markets';
 const ordersUrl = `${baseUrl}/v2/orders`;
 const positionsUrl = `${baseUrl}/v2/positions`;
 const accountUrl = `${baseUrl}/v2/account`;
-const barsUrl = `https://data.alpaca.markets/v1/bars/`
 const headers = {
     'APCA-API-KEY-ID': apiKey,
     'APCA-API-SECRET-KEY': secretKey
@@ -19,7 +18,8 @@ const headers = {
 // for monitor function
 let toggle = "off";
 let marketOpen;
-let watchList = ["AES", "S", "SORL", "F", "TTM", "CNP"];
+
+let watchList = [];
 
 // API functions
 // GET functions
@@ -42,11 +42,64 @@ const getAccount = ()=>{
     })
 }
 
+const getTradeHistory = ()=>{
+    let tradeHistoryArray = []
+    let tradeHistoryHtml = '<h2>Trade History</h2><p> Out of the last 500 trades, here are the sells that filled:</p>'
+    $.ajax({
+        method: 'GET',
+        url: `${ordersUrl}?status=closed&limit=500`,
+        contentType: 'application/json',
+        headers: headers
+    }).then((response)=>{
+        console.log(response)
+        response.forEach((el)=>{
+            // console.log(el)
+            let symbol = el.symbol
+            let side = el.side
+            let qty = el.filled_qty
+            if (side === 'sell' && qty > 0){
+                tradeHistoryArray.push(symbol)
+                
+            }
+        })
+        function counter(arr) {
+            var a = [], b = [], prev;
+            
+            arr.sort();
+            for ( var i = 0; i < arr.length; i++ ) {
+                if ( arr[i] !== prev ) {
+                    a.push(arr[i]);
+                    b.push(1);
+                } else {
+                    b[b.length-1]++;
+                }
+                prev = arr[i];
+            }
+            
+            return [a, b];
+        }
+        let instances = counter(tradeHistoryArray)
+        let symbols = instances[0]
+        let ordersFilled = instances[1]
+        for (let j = 0; j < symbols.length; j++){
+            tradeHistoryHtml += `<br><p class="tradeHistoryItem"><span class="tradeHistoryButton">${symbols[j]}</span> filled ${ordersFilled[j]}.</p>`
+            if (ordersFilled[j] > 6){
+                watchList.push(symbols[j])
+            }
+        }
+        $(".trade-history").html(tradeHistoryHtml)
+        createWatchlist(watchList)
+    }).catch((err)=>{
+        console.log(err)
+        return err
+    })
+}
+
 const checkOrders = ()=>{
     return new Promise((resolve, reject)=>{
         $.ajax({
             method: 'GET',
-            url: ordersUrl,
+            url: ordersUrl+'?limit=500',
             contentType: 'application/json',
             headers: headers
         }).then(function (response){
@@ -86,7 +139,7 @@ const checkOrders = ()=>{
     })
 }
 
-const checkOrdersBySymbol = (watchListSymbol)=>{
+const checkOrdersBySymbol = (str)=>{
     return new Promise((resolve, reject)=>{
         $.ajax({
             method: 'GET',
@@ -97,15 +150,14 @@ const checkOrdersBySymbol = (watchListSymbol)=>{
             // returns array of objects
             // console.log("Check Orders:")
             // console.log(response)
-            
+            let arr= [];
             response.forEach(function(el){
                 let symbol = el.symbol;
-                let side = el.side.toUpperCase();
-                let price = el.limit_price;
-                let qty = el.qty;
-                let id = el.id;
+                if (symbol === str.toUpperCase()){
+                    arr.push(el)
+                }
             })
-            resolve(response)
+            resolve(arr)
         }).catch(()=>{reject("Failed to check orders.")})
         
     })
@@ -136,7 +188,10 @@ const checkPositions = ()=>{
                 let price = el.current_price;
                 let shares = el.qty;
                 let profitLoss = el.unrealized_pl;
-                let htmlToAppend = `
+                // if (parseFloat(profitLoss)>10){
+                //     sellPositionBySymbol(symbol)
+                // } else {
+                    let htmlToAppend = `
                 <li class="position">
                     <span class="position-symbol">${symbol}</span>
                     <span class="position-price">${price}</span>
@@ -146,6 +201,7 @@ const checkPositions = ()=>{
                 </li>
                 `
                 positionsHtml = positionsHtml + htmlToAppend;
+                // }
             })
             $('.positions-list').html(positionsHtml);
             resolve(response) ;
@@ -182,56 +238,56 @@ const checkPositionsBySymbol = (symbol)=>{
 }
 
 // POST functions
-const createOrder = (sym)=>{
-    let symbol = sym.toUpperCase();
-    let url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${AVKey}`
-    $.ajax({
-        method: 'GET',
-        url: url,
-        contentType: 'application/json',
-        dataType: 'json'
-    }).then(function(response){
-        console.log(response["Global Quote"]["05. price"]);
-        let firstOrderPrice = response["Global Quote"]["05. price"];
-        // if we are selling, add a little to current price before starting the process,
-        // else if we are buying, just use current price.
-        let workingPrice = parseFloat(firstOrderPrice);
-        let data = {
-            'symbol': symbol,
-            'qty': 100,
-            'side': "buy",
-            'type': "limit",
-            'time_in_force': "gtc",
-            "limit_price": workingPrice.toString()
-        }
+const createOrder = (arr)=>{
+    arr.forEach((el)=>{
+        let url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${el}&apikey=${AVKey}`
         $.ajax({
-            method: 'POST',
-            url: `${ordersUrl}`,
+            method: 'GET',
+            url: url,
             contentType: 'application/json',
-            dataType: 'json',
-            processData: false,
-            data: JSON.stringify(data),
-            headers: headers
-        }).then(function (response){
-            // returns object
-            console.log("Create Orders:")
-            console.log(response)
-            for (let x=0;x<9;x+=1){
-                let price1 = workingPrice;
-                price1 = price1-(0.02*x)
-                createBuyLimits(symbol, price1.toString());
+            dataType: 'json'
+        }).then(function(response){
+            console.log(response["Global Quote"]["05. price"]);
+            let firstOrderPrice = response["Global Quote"]["05. price"];
+            // if we are selling, add a little to current price before starting the process,
+            // else if we are buying, just use current price.
+            let workingPrice = parseFloat(firstOrderPrice);
+            let data = {
+                'symbol': el,
+                'qty': 100,
+                'side': "buy",
+                'type': "limit",
+                'time_in_force': "gtc",
+                "limit_price": workingPrice.toString()
             }
-            pageLoad();
+            $.ajax({
+                method: 'POST',
+                url: `${ordersUrl}`,
+                contentType: 'application/json',
+                dataType: 'json',
+                processData: false,
+                data: JSON.stringify(data),
+                headers: headers
+            }).then(function (response){
+                // returns object
+                console.log("Create Orders:")
+                console.log(response)
+                for (let x=0;x<9;x+=1){
+                    let price1 = workingPrice;
+                    price1 = price1-(0.01*x)
+                    createBuyLimits(el, price1.toString());
+                }
+                pageLoad();
+            })
+        }).catch((err)=>{
+            console.log(err)
+            return err
         })
-    }).catch((err)=>{
-        console.log(err)
-        return err
     })
 }
 
 const createBuyLimits = (sym, price)=>{
     let symbol = sym.toUpperCase();
-    
     let data = {
         'symbol': symbol,
         'qty': 100,
@@ -260,7 +316,7 @@ const createBuyLimits = (sym, price)=>{
 
 const createSellLimits = (sym, price)=>{
     let symbol = sym.toUpperCase();
-    
+        
     let data = {
         'symbol': symbol,
         'qty': 100,
@@ -327,6 +383,17 @@ const deleteAllOrders = ()=>{
         // console.log(response)
         pageLoad();
     })
+}
+
+const deleteOrdersBySymbol = (symbol)=>{
+    checkOrdersBySymbol(symbol.toUpperCase())
+    .then((response)=>{
+        console.log(response)
+        response.forEach((el)=>{
+            deleteOrderById(el.id)
+        })
+    })
+    .catch(err=>{console.log(err)})
 }
 
 const deleteOrderById = (orderId)=>{
@@ -475,47 +542,62 @@ const marketOpenCheck = ()=>{
 }
 
 let timeoutId;
-const monitor = (status)=>{
+const monitorCheckPositions = ()=>{
     let rateLimiter = 0;
-    if (status === "on"){
-        checkPositions().then((response)=>{
-            if (response.length === "0"){
-                console.log("No orders found. Try again in 3 seconds...")
-                sleep(3000).then(()=>{monitor(toggle)})
-                return false
-            } else {
-                console.log("Monitor positions:")
-                console.log(response)
-                response.forEach((el)=>{
-                    let shares = el.qty;
-                    let symbol = el.symbol;
-                    let minSalePrice = el.avg_entry_price; 
-                    let numOfOrders = Math.abs(Math.round(shares / 100) );
-                    // to prevent massive amounts of short orders,
-                    // immediately cancel orders with negative shares
-                    if(shares < 0){
-                        sellPositionBySymbol(symbol)
-                    } else {
-                        rateLimiter += numOfOrders;
-                        console.log("num of orders:")
-                        console.log(numOfOrders)
-                        let x = 1
-                        while (x <= numOfOrders) {
-                            minSalePrice = (parseFloat(minSalePrice)+(0.02*x)).toString()   
-                            createSellLimits(symbol, minSalePrice)
-                            x+=1
-                        }
+    checkPositions().then((response)=>{
+        if (response.length === "0"){
+            console.log("No orders found. Try again in 3 seconds...")
+            sleep(3000).then(()=>{monitor(toggle)})
+            return false
+        } else {
+            console.log("Monitor positions:")
+            console.log(response)
+            response.forEach((el)=>{
+                let shares = el.qty;
+                let symbol = el.symbol;
+                let minSalePrice = el.avg_entry_price; 
+                let numOfOrders = Math.abs(Math.round(shares / 100) );
+                // to prevent massive amounts of short orders,
+                // immediately cancel orders with negative shares
+                if(shares < 0){
+                    deleteOrdersBySymbol(symbol)
+                    sellPositionBySymbol(symbol)
+                } else {
+                    rateLimiter += numOfOrders;
+                    console.log("num of orders:")
+                    console.log(numOfOrders)
+                    let x = 1
+                    while (x <= numOfOrders) {
+                        minSalePrice = (parseFloat(minSalePrice)+(0.01*x)).toString()   
+                        createSellLimits(symbol, minSalePrice)
+                        x+=1
                     }
-                })
-                pageLoad();
-                // alpaca has a 200 requests per min limit, 
-                // so this forces us to respect that
-                // to keep the calls from failing
-                let waitTime = Math.round(2000+(1000*(rateLimiter/3.5)))
-                console.log("Checking again in "+ waitTime/1000 + " secs...")
-                timeoutId = setTimeout(marketOpenCheck, waitTime)
-            }
-        })
+                }
+            })
+            pageLoad();
+            // alpaca has a 200 requests per min limit, 
+            // so this forces us to respect that
+            // to keep the calls from failing
+            let waitTime = Math.round(2000+(1000*(rateLimiter/3.5)))
+            console.log("Checking again in "+ waitTime/1000 + " secs...")
+            timeoutId = setTimeout(marketOpenCheck, waitTime)
+        }
+    })
+}
+
+const monitorCheckWatchlist = ()=>{
+    let arr = [];
+    
+    createOrder(arr)
+}
+
+const monitor = (status)=>{
+    
+    if (status === "on"){
+        // first check open positions and create sell orders if needed
+        monitorCheckPositions();
+        // then check watchlist and open buy orders if there aren't any open now
+        // monitorCheckWatchlist();
     } else if (status === "off"){
         clearTimeout(timeoutId)
         return false
@@ -524,7 +606,7 @@ const monitor = (status)=>{
 
 const streamTrades = (status)=>{
     let socket;
-    if (status === 'turn on'){
+    if (status === 'on'){
         socket = new WebSocket("wss://paper-api.alpaca.markets/stream/")
         
         let subscribeData = {
@@ -611,14 +693,15 @@ const streamTrades = (status)=>{
             console.log("Closed the socket.")
             console.log(msg)
         }
-    } else if (status === "turn off"){
+    } else if (status === "off"){
         socket.close()
     }
 }
 
-const createWatchlist = ()=>{
+const createWatchlist = (arr)=>{
+    console.group(watchList)
     $(".watchlist").html(`
-        <h2>Watchlist</h2>
+        <h2>Watchlist (${watchList.length} items)</h2>
         <ul class="list-of-symbols">
             <li class="column-headers">
                 <p>Symbol</p>
@@ -631,63 +714,77 @@ const createWatchlist = ()=>{
         </ul>
     `)
 
-    getWatchlist(watchList)
+    var i = 0;                     //  set your counter to 0
+
+    function watchLoop () {           //  create a loop function
+        setTimeout(function () {    //  call a 3s setTimeout when the loop is called
+            getWatchlist(arr[i]);          //  your code here
+            i++;                     //  increment the counter
+            if (i < watchList.length) {            //  if the counter < 10, call the loop function
+                watchLoop();             //  ..  again which will trigger another 
+            }                        //  ..  setTimeout()
+        }, 12000)
+    }
+
+    watchLoop()
+
+    // watchList.forEach((el)=>{
+    //     getWatchlist(el)
+    // })
 
     return null
     
 }
 
-const getWatchlist = (arr)=>{
+const getWatchlist = (str)=>{
     let dynamicHtml;
-    arr.forEach((el)=>{
-        let x = 1;
-        let el7d, el14d, el28d, current;
-        let high, low, open, close;
-        $.ajax({
-            method: 'GET',
-            url: `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${el}&apikey=${AVKey}`,
-            // contentType: 'application/json',
-            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-            dataType: 'json'
-        }).then((response)=>{
-            let timeSeries = Object.entries(response['Time Series (Daily)'])
-            timeSeries.forEach(stock=>{
-                high = parseFloat(stock[1]["2. high"])
-                low = parseFloat(stock[1]["3. low"])
-                open = parseFloat(stock[1]["1. open"])
-                close = parseFloat(stock[1]["4. close"])
-                let avg = (high + low + open + close) / 4
-                avg = avg.toFixed(2)
-                console.log(`${el} had an avg of ${avg} ${x} day(s) ago.`)
-                switch(x){
-                    case 1:
-                        current = avg
-                        break;
-                    case 7:
-                        el7d = avg;
-                        break;
-                    case 14:
-                        el14d = avg;
-                        break;
-                    case 28:
-                        el28d = avg;
-                        break;
-                    default:
-                        break;
-                }
-                dynamicHtml = `<li class="watch-item"><span class="watch-symbol">${el}</span>`
-                dynamicHtml += `<span class="watch-price">${current}</span>`
-                dynamicHtml += `<span class="watch-7d">${el7d}</span>`
-                dynamicHtml += `<span class="watch-14d">${el14d}</span>`
-                dynamicHtml += `<span class="watch-28d">${el28d}</span>`
-                dynamicHtml += `<span class="watch-remove">X</span></li>`
-                // console.log(dynamicHtml)
-                x++
-            })
-            renderWatchlist(dynamicHtml)
-        }).catch(err=>{
-            console.log(err)
+    let x = 1;
+    let el7d, el14d, el28d, current;
+    let high, low, open, close;
+    $.ajax({
+        method: 'GET',
+        url: `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${str}&apikey=${AVKey}`,
+        // contentType: 'application/json',
+        contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+        dataType: 'json'
+    }).then((response)=>{
+        let timeSeries = Object.entries(response['Time Series (Daily)'])
+        timeSeries.forEach(stock=>{
+            high = parseFloat(stock[1]["2. high"])
+            low = parseFloat(stock[1]["3. low"])
+            open = parseFloat(stock[1]["1. open"])
+            close = parseFloat(stock[1]["4. close"])
+            let avg = (high + low + open + close) / 4
+            avg = avg.toFixed(2)
+            console.log(`${str} had an avg of ${avg} ${x} day(s) ago.`)
+            switch(x){
+                case 1:
+                    current = avg
+                    break;
+                case 7:
+                    el7d = avg;
+                    break;
+                case 14:
+                    el14d = avg;
+                    break;
+                case 28:
+                    el28d = avg;
+                    break;
+                default:
+                    break;
+            }
+            dynamicHtml = `<li class="watch-item"><span class="watch-symbol">${str}</span>`
+            dynamicHtml += `<span class="watch-price">${current}</span>`
+            dynamicHtml += `<span class="watch-7d">${el7d}</span>`
+            dynamicHtml += `<span class="watch-14d">${el14d}</span>`
+            dynamicHtml += `<span class="watch-28d">${el28d}</span>`
+            dynamicHtml += `<span class="watch-remove">X</span></li>`
+            // console.log(dynamicHtml)
+            x++
         })
+        renderWatchlist(dynamicHtml)
+    }).catch(err=>{
+        console.log(err)
     })
 }
 
@@ -701,6 +798,7 @@ $(document).on("click", ".new-ping", function(){
     $(".buttons").html(`
         <h2>Create a new Ping</h2>
         <label for="ping-symbol">Symbol:<br>
+            <p>MAX: 4 symbols. Separate multiple symbols with commas.</p>
             <input autofocus type="text" name="ping-symbol" id="ping-symbol" autocomplete="off">
         </label> 
         <button class="submit-ping">Create</button>
@@ -710,27 +808,30 @@ $(document).on("click", ".new-ping", function(){
     $("#ping-symbol").focus();
     
     $(".submit-ping").on("click", function(){
-        let symbol = $("#ping-symbol").val().toUpperCase();
-        watchList.push(symbol);
-        renderWatchlist();
-        if (symbol){
-            createOrder(symbol);
+        let symbol = $("#ping-symbol").val().toUpperCase().replace(/\s/g, "");
+        let arr = symbol.split(',')
+        // watchList.push(symbol);
+        // renderWatchlist();
+        if (arr){
             $(".status-msg").html(`
-                Ping Created for ${symbol}.
+            Ping Created for ${symbol}.
             `)
             $(".buttons").html(`
-                <h2>Controls</h2>
+            <h2>Controls</h2>
                 <button class="new-ping">New Ping</button>
                 <button class="toggle-monitor">Toggle Monitor</button>
                 <button class="clear-pending">Clear Pending Orders</button>
+                <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
             `)
+            createOrder(arr)
         }
         else {
             $(".buttons").html(`
-                <h2>Controls</h2>
-                <button class="new-ping">New Ping</button>
-                <button class="toggle-monitor">Toggle Monitor</button>
-                <button class="clear-pending">Clear Pending Orders</button>
+            <h2>Controls</h2>
+            <button class="new-ping">New Ping</button>
+            <button class="toggle-monitor">Toggle Monitor</button>
+            <button class="clear-pending">Clear Pending Orders</button>
+            <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
             `)
             $(".status-msg").html(`
                 No New Pings Created.
@@ -740,10 +841,11 @@ $(document).on("click", ".new-ping", function(){
     
     $(".cancel-ping").on("click", function(){
         $(".buttons").html(`
-            <h2>Controls</h2>
-            <button class="new-ping">New Ping</button>
-            <button class="toggle-monitor">Toggle Monitor</button>
-            <button class="clear-pending">Clear Pending Orders</button>
+        <h2>Controls</h2>
+        <button class="new-ping">New Ping</button>
+        <button class="toggle-monitor">Toggle Monitor</button>
+        <button class="clear-pending">Clear Pending Orders</button>
+        <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
         `)
         $(".status-msg").html(`
             No New Pings Created.
@@ -753,8 +855,66 @@ $(document).on("click", ".new-ping", function(){
 
 $(document).on("click", ".clear-pending", function(){
     deleteAllOrders();
-    sleep(100).then(()=>{
-        pageLoad()
+})
+
+$(document).on("click", ".clear-pending-symbol", function(){
+    $(".buttons").html(`
+        <h2>Delete Orders by Symbol</h2>
+        <label for="delete-symbol">Symbol:<br>
+            <p>Separate multiple symbols with commas.</p>
+            <input autofocus type="text" name="delete-symbol" id="delete-symbol" autocomplete="off">
+        </label> 
+        <button class="submit-delete">Delete</button>
+        <button class="cancel-delete">Cancel</button>
+    `)
+    
+    $("#delete-symbol").focus();
+    
+    $(".submit-delete").on("click", function(){
+        let symbol = $("#delete-symbol").val().toUpperCase().replace(/\s/g, "");
+        let arr = symbol.split(',')
+        // watchList.push(symbol);
+        // renderWatchlist();
+        if (arr){
+            $(".status-msg").html(`
+            Deleting all orders for ${symbol}.
+            `)
+            $(".buttons").html(`
+            <h2>Controls</h2>
+                <button class="new-ping">New Ping</button>
+                <button class="toggle-monitor">Toggle Monitor</button>
+                <button class="clear-pending">Clear Pending Orders</button>
+                <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
+            `)
+            arr.forEach((el)=>{
+                deleteOrdersBySymbol(el)
+            })
+        }
+        else {
+            $(".buttons").html(`
+            <h2>Controls</h2>
+            <button class="new-ping">New Ping</button>
+            <button class="toggle-monitor">Toggle Monitor</button>
+            <button class="clear-pending">Clear Pending Orders</button>
+            <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
+            `)
+            $(".status-msg").html(`
+                No Orders Deleted.
+            `)
+        }
+    })
+    
+    $(".cancel-delete").on("click", function(){
+        $(".buttons").html(`
+        <h2>Controls</h2>
+        <button class="new-ping">New Ping</button>
+        <button class="toggle-monitor">Toggle Monitor</button>
+        <button class="clear-pending">Clear Pending Orders</button>
+        <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
+        `)
+        $(".status-msg").html(`
+            No Orders Deleted.
+        `)
     })
 })
 
@@ -766,8 +926,10 @@ $(document).on("click", ".menu-link", function(e){
     else{
         $(".active-link").removeClass("active-link");
         $(e.currentTarget).addClass("active-link")
+        $('html, body').animate({
+            scrollTop: $($.attr(this, 'href')).offset().top
+        }, 500);
     }
-    pageLoad();
 })
 
 $(document).on("click", ".refresh", function(){
@@ -777,6 +939,7 @@ $(document).on("click", ".refresh", function(){
 $(document).on("click", ".position-cancel", function(e){
     let symbol = e.target.parentNode.children[0].innerText
     console.log(symbol)
+    deleteOrdersBySymbol(symbol)
     sellPositionBySymbol(symbol);
     sleep(100).then(()=>{
         pageLoad()
@@ -793,14 +956,30 @@ $(document).on("click", ".order-cancel", function(e){
     })
 })
 
+$(document).on("click", ".tradeHistoryButton", function(e){
+    let text = e.currentTarget.innerText
+    let check = watchList.includes(text)
+    console.log(check)
+    if (check === false){
+        watchList.push(text)
+        createWatchlist(watchList)
+    }
+})
+
+$(document).on("click", ".watch-remove", function(e){
+    let text = e.currentTarget.parentNode.firstElementChild.innerText
+    let query = watchList.indexOf(text)
+    watchList.splice(query, 1)
+    createWatchlist(watchList)
+})
 
 $(document).on("click", ".toggle-monitor", function(){
     //     if(toggle === "off"){
-    //         streamTrades("turn on");
+    //         streamTrades("on");
     //         toggle = "on";
     //         $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
     //     } else if (toggle === "on"){
-    //         streamTrades("turn off");
+    //         streamTrades("off");
     //         toggle = "off"
     //         $(".status-msg").html("<h1>Monitor paused. Click that same button again to resume.</h1>")
     //     }
@@ -815,4 +994,26 @@ $(document).on("click", ".toggle-monitor", function(){
     }
 })
 
+$(".research-query").on("submit", (e)=>{
+    e.preventDefault();
+    let symbol = $("#symbol-query").val().toUpperCase().replace(/\s/g, "");
+    let arr = symbol.split(',')
+    arr.forEach((el)=>{
+        let url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${el}&apikey=${AVKey}`
+        $.ajax({
+            method: 'GET',
+            url: url,
+            // contentType: 'application/json',
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+            dataType: 'json'
+        }).then((response)=>{
+            console.log(response["Time Series (Daily)"])
+            // returns object of objects where keys are dates, so they
+            // are dynamic. Need to loop through them and display the date,
+            // each data point, and a chart with the symbol on top
+        })
+    })
+})
+
 pageLoad();
+getTradeHistory();

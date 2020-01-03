@@ -8,14 +8,14 @@
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-    <header>
+    <!-- <header>
         <section class="top-bar">
             <h1 class="title">Ping Pong</h1>
             <div class="menu">
                 <ul class="menu-list">
-                    <a class="menu-link active-link" href="#"><li class="menu-item">Overview</li></a>
-                    <a class="menu-link" href="#"><li class="menu-item">Research</li></a>
-                    <a class="menu-link" href="#"><li class="menu-item">Trade History</li></a>
+                    <a class="menu-link active-link" href="#main-app"><li class="menu-item">Overview</li></a>
+                    <a class="menu-link" href="#research"><li class="menu-item">Research</li></a>
+                    <a class="menu-link" href="#trade-history"><li class="menu-item">Trade History</li></a>
                 </ul>
             </div>
         </section>
@@ -24,16 +24,25 @@
                 <p class="status-msg">Happy Trading!</p>
             </div>
         </section>
-    </header>
+    </header> -->
+    <h1 style="text-align: center;padding-top: 20px;">Ping Pong</h1>
     <main id='main-app'>
         <section id="account">
-            <h2>Account</h2>
-            <div class="equity-numbers">
-                <p>Equity: $<span class="equity">100,000</span></p>
-                <p>Buying Power: $<span class="buying-power">400,000  </span><button class="refresh">Refresh</button></p>
-            </div>
-            <div class="equity-chart">
-                <p>Chart goes here</p>
+            <div class="overview">
+                <div class="account">
+                    <h2>Account</h2>
+                    <div class="equity-numbers">
+                        <p>Equity: $<span class="equity">Loading...</span></p>
+                        <p>Buying Power: $<span class="buying-power">Loading...  </span><button class="refresh">Refresh</button></p>
+                    </div>
+                    <div class="equity-chart">
+                        <p>Chart goes here</p>
+                    </div>
+                </div>
+                <div class="status-msg-box">
+                    <p class="">Messages:</p>
+                    <p class="status-msg">Happy Trading!</p>
+                </div>
             </div>
             <div class="positions">
                 <h2>Positions</h2>
@@ -66,16 +75,27 @@
                 <button class="new-ping">New Ping</button>
                 <button class="toggle-monitor">Toggle Monitor</button>
                 <button class="clear-pending">Clear Pending Orders</button>
+                <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
             </div>
             <div class="watchlist">
+                <h2>Watchlist</h2>
             </div>
         </section>
             
     </main>
-    <section class="research">
+    <section id="research" class="research">
         <h2>Research</h2>
+        <form class="research-query" action="#" method="post">
+            <label for="symbol-query">Symbol to Research:</label>
+            <br>
+            <br>
+            <p>You can separate multiple symbols by commas.</p>
+            <br>
+            <input type="text" name="symbol-query" id="symbol-query">
+            <input type="submit" value="Submit">
+        </form>
     </section>
-    <section class="trade-history">
+    <section id="trade-history" class="trade-history">
         <h2>Trade History</h2>
     </section>
     <script

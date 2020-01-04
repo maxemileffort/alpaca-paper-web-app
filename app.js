@@ -150,16 +150,19 @@ const checkOrdersBySymbol = (str)=>{
             // returns array of objects
             // console.log("Check Orders:")
             // console.log(response)
-            let arr= [];
+            let arr= [str];
             response.forEach(function(el){
+                // console.log(el)
                 let symbol = el.symbol;
+                // console.log(symbol)
                 if (symbol === str.toUpperCase()){
+                    console.log("Match!")
                     arr.push(el)
                 }
             })
             resolve(arr)
-        }).catch(()=>{reject("Failed to check orders.")})
-        
+            // return arr
+        }).catch((err)=>{reject(err)})
     })
 }
 
@@ -586,9 +589,69 @@ const monitorCheckPositions = ()=>{
 }
 
 const monitorCheckWatchlist = ()=>{
-    let arr = [];
+    console.log("Watchlist:")
+    console.log(watchList)
+
+    // watchlist symbols are high quality because they have sold at least 
+    // 7 times in the past 500 trades. so we scan it...
+    let matchWatchlistToOrders = ()=>{
+        let arr = []
+        for (let symbol of watchList){
+            arr.push(checkOrdersBySymbol(symbol))
+        }
+        return Promise.all(arr)
+    }    
     
-    createOrder(arr)
+    // to see if there are ANY orders, buy or sell, that exist for those symbols
+    matchWatchlistToOrders().then((response)=>{
+        console.log(response)
+        response.forEach((el)=>{
+            // if there are, we'll make sure there's at least 
+            // 10 orders out there by adding some buy orders
+            console.log(el)
+            if (el.length > 1 && el.length< 11){
+                for (let i = 10 - el.length; i<=el.length; i++){
+                    console.log(i)
+                    createBuyLimits(el[0], (parseFloat(el[10].limit_price)-0.01*i).toString())
+                }
+                // if there are no orders, but the symbol is on the watchlist,
+                // then go out and create some buy orders
+            } else if (el.length === 1){
+                console.log(el)
+                createOrder(el)
+            }
+        })
+    }).catch((err)=>{
+        console.log(err)
+    })
+    
+    // for (const symbol of watchList){
+    //     checkOrdersBySymbol(symbol)
+    //     .then((response)=>{
+    //         console.log("Response from checkOrdersBySymbol inside monitorCheckWatchlist:")
+    //         console.log(response)
+    //         if (response.length === 0){
+    //             arr.push(symbol)
+    //         // if there are some but less than 10, we'll go ahead and fill that difference to 10
+    //         } else if (response.length > 0 && response.length < 10){
+    //             console.log(response.length)
+    //             for (let x = 10 - response.length; x <= response.length; x++){
+    //                 // this next line could result in orders that go too far down or possibly 
+    //                 // doubling up shares on certain prices, depending on how the first element
+    //                 // is decided in the array that comes from alpaca regarding orders
+    //                 console.log(x)
+    //                 createBuyLimits(symbol, response[0].limit_price-0.01*x) 
+    //             }
+    //         }
+    //         console.log(arr)
+    //     })
+    //     .catch((err)=>{
+    //         console.log(err)
+    //         return err
+    //     })
+    // }
+    // console.log(arr)
+
 }
 
 const monitor = (status)=>{
@@ -597,7 +660,7 @@ const monitor = (status)=>{
         // first check open positions and create sell orders if needed
         monitorCheckPositions();
         // then check watchlist and open buy orders if there aren't any open now
-        // monitorCheckWatchlist();
+        monitorCheckWatchlist();
     } else if (status === "off"){
         clearTimeout(timeoutId)
         return false
@@ -713,20 +776,26 @@ const createWatchlist = (arr)=>{
             </li>
         </ul>
     `)
+    if (watchList.length > 5){
+        var i = 0;                     //  set your counter to 0
 
-    var i = 0;                     //  set your counter to 0
+        function watchLoop () {           //  create a loop function
+            setTimeout(function () {    //  call a 3s setTimeout when the loop is called
+                getWatchlist(arr[i]);          //  your code here
+                i++;                     //  increment the counter
+                if (i < watchList.length) {            //  if the counter < 10, call the loop function
+                    watchLoop();             //  ..  again which will trigger another 
+                }                        //  ..  setTimeout()
+            }, 12000)
+        }
 
-    function watchLoop () {           //  create a loop function
-        setTimeout(function () {    //  call a 3s setTimeout when the loop is called
-            getWatchlist(arr[i]);          //  your code here
-            i++;                     //  increment the counter
-            if (i < watchList.length) {            //  if the counter < 10, call the loop function
-                watchLoop();             //  ..  again which will trigger another 
-            }                        //  ..  setTimeout()
-        }, 12000)
+        watchLoop()
+    } else {
+        watchList.forEach((el)=>{
+            getWatchlist(el)
+        })
     }
-
-    watchLoop()
+    
 
     // watchList.forEach((el)=>{
     //     getWatchlist(el)

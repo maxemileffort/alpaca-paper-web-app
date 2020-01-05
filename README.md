@@ -28,7 +28,11 @@ You'll probably want to do some research first, looking for ticker symbols that 
 
 You'll want to create a "New Ping" and then type in a list (works best with 4 tickers at a time, as the free APIs have some pretty debilitating limitations) of symbols, comma separated. After they are created, click refresh and then "Toggle Monitor".
 
+If it's a market trading day:
 Then, sit back, and let the app do its magic.
+
+If not:
+Try again on the next one!
 
 ## Limitations
 

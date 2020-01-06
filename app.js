@@ -391,10 +391,9 @@ const deleteAllOrders = ()=>{
 const deleteOrdersBySymbol = (symbol)=>{
     checkOrdersBySymbol(symbol.toUpperCase())
     .then((response)=>{
-        console.log(response)
-        response.forEach((el)=>{
-            deleteOrderById(el.id)
-        })
+        for (let i = 1; i < response.length; i++){
+            deleteOrderById(response[i].id)
+        }
     })
     .catch(err=>{console.log(err)})
 }
@@ -564,7 +563,9 @@ const monitorCheckPositions = ()=>{
                 // immediately cancel orders with negative shares
                 if(shares < 0){
                     deleteOrdersBySymbol(symbol)
-                    sellPositionBySymbol(symbol)
+                    sleep(1000).then(()=>{
+                        sellPositionBySymbol(symbol)
+                    })
                 } else {
                     rateLimiter += numOfOrders;
                     console.log("num of orders:")
@@ -581,7 +582,7 @@ const monitorCheckPositions = ()=>{
             // alpaca has a 200 requests per min limit, 
             // so this forces us to respect that
             // to keep the calls from failing
-            let waitTime = Math.round(2000+(1000*(rateLimiter/3.5)))
+            let waitTime = Math.round(2000+(1000*(rateLimiter/2.7)))
             console.log("Checking again in "+ waitTime/1000 + " secs...")
             timeoutId = setTimeout(marketOpenCheck, waitTime)
         }
@@ -611,14 +612,18 @@ const monitorCheckWatchlist = ()=>{
             console.log(el)
             if (el.length > 1 && el.length< 11){
                 for (let i = 10 - el.length; i<=el.length; i++){
-                    console.log(i)
-                    createBuyLimits(el[0], (parseFloat(el[10].limit_price)-0.01*i).toString())
+                    // console.log(i)
+                    sleep(1000).then(()=>{
+                        createBuyLimits(el[0], (parseFloat(el[el.length-1].limit_price)-0.01*i).toString())
+                    })
                 }
                 // if there are no orders, but the symbol is on the watchlist,
                 // then go out and create some buy orders
             } else if (el.length === 1){
                 console.log(el)
-                createOrder(el)
+                sleep(1000).then(()=>{
+                    createOrder(el)
+                })
             }
         })
     }).catch((err)=>{
@@ -655,7 +660,6 @@ const monitorCheckWatchlist = ()=>{
 }
 
 const monitor = (status)=>{
-    
     if (status === "on"){
         // first check open positions and create sell orders if needed
         monitorCheckPositions();
@@ -1008,8 +1012,10 @@ $(document).on("click", ".refresh", function(){
 $(document).on("click", ".position-cancel", function(e){
     let symbol = e.target.parentNode.children[0].innerText
     console.log(symbol)
-    deleteOrdersBySymbol(symbol)
-    sellPositionBySymbol(symbol);
+    deleteOrdersBySymbol(symbol);
+    sleep(100).then(()=>{
+        sellPositionBySymbol(symbol);
+    })
     sleep(100).then(()=>{
         pageLoad()
     })

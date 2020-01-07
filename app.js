@@ -1,5 +1,5 @@
 // TODO: 
-// equity chart, use watchlist to monitor buy orders, 
+// equity chart, EOD csv
 // websocket, research symbols
 
 const apiKey = keys.apiKey;
@@ -17,9 +17,10 @@ const headers = {
 
 // for monitor function
 let toggle = "off";
-let marketOpen;
+let marketOpen = false;
 
 let watchList = [];
+let watchListCounter = 1;
 
 // API functions
 // GET functions
@@ -143,7 +144,7 @@ const checkOrdersBySymbol = (str)=>{
     return new Promise((resolve, reject)=>{
         $.ajax({
             method: 'GET',
-            url: ordersUrl,
+            url: ordersUrl+'?limit=500',
             contentType: 'application/json',
             headers: headers
         }).then(function (response){
@@ -191,9 +192,12 @@ const checkPositions = ()=>{
                 let price = el.current_price;
                 let shares = el.qty;
                 let profitLoss = el.unrealized_pl;
-                // if (parseFloat(profitLoss)>10){
-                //     sellPositionBySymbol(symbol)
-                // } else {
+                if (parseFloat(profitLoss) > 50 && marketOpen === true){
+                    deleteOrdersBySymbol(symbol)
+                    sleep(1000).then(()=>{
+                        sellPositionBySymbol(symbol)
+                    })
+                } else {
                     let htmlToAppend = `
                 <li class="position">
                     <span class="position-symbol">${symbol}</span>
@@ -204,7 +208,7 @@ const checkPositions = ()=>{
                 </li>
                 `
                 positionsHtml = positionsHtml + htmlToAppend;
-                // }
+                }
             })
             $('.positions-list').html(positionsHtml);
             resolve(response) ;
@@ -217,7 +221,6 @@ const checkPositions = ()=>{
 
 const checkPositionsBySymbol = (symbol)=>{
     return new Promise(resolve=>{
-        if (resolve){
             $.ajax({
                 method: 'GET',
                 url: `${positionsUrl}/${symbol.toUpperCase()}`,
@@ -228,7 +231,7 @@ const checkPositionsBySymbol = (symbol)=>{
                 // returns object
                 console.log("Check Positions by Symbol:")
                 console.log(response)
-                return response
+                resolve(response) 
             }).catch(function(err){
                 console.log(err)
                 if (err.status === 404){
@@ -236,7 +239,6 @@ const checkPositionsBySymbol = (symbol)=>{
                 }
                 return err
             })
-        }
     })
 }
 
@@ -388,9 +390,17 @@ const deleteAllOrders = ()=>{
     })
 }
 
-const deleteOrdersBySymbol = (symbol)=>{
-    checkOrdersBySymbol(symbol.toUpperCase())
+const deleteOrdersBySymbol = (sym)=>{
+    //construct promise so function runs in correct order
+    let symbolsPromise = (str)=>{
+        let arr = []
+        arr.push(checkOrdersBySymbol(str.toUpperCase()))
+        return Promise.all(arr)
+    }
+
+    symbolsPromise(sym.toUpperCase())
     .then((response)=>{
+        console.log(response)
         for (let i = 1; i < response.length; i++){
             deleteOrderById(response[i].id)
         }
@@ -520,6 +530,7 @@ const marketOpenCheck = ()=>{
     console.log(timeString)
     // check day
     if(day === "Saturday" || day === "Sunday"){
+        marketOpen = false;
         $(".status-msg").html("<h1>Market is Closed today!</h1>")
         // check every 6 hours to see what day it is
         setTimeout(marketOpenCheck, 2.16e7)
@@ -529,11 +540,14 @@ const marketOpenCheck = ()=>{
             // for 8 am, minutes needs to be 30 or higher
             // doesn't matter the rest of the time
             if (hour === 8 && minute >= 30){
+                marketOpen = true;
                 monitor(toggle)
             } else {
+                marketOpen = true;
                 monitor(toggle)
             }
         } else {
+            marketOpen = false;
             monitor("off")
             $(".status-msg").html("<h1>Market is Closed right now!</h1>")
             sleep(60000).then(()=>{
@@ -571,7 +585,7 @@ const monitorCheckPositions = ()=>{
                     console.log("num of orders:")
                     console.log(numOfOrders)
                     let x = 1
-                    while (x <= numOfOrders) {
+                    while (x < numOfOrders) {
                         minSalePrice = (parseFloat(minSalePrice)+(0.01*x)).toString()   
                         createSellLimits(symbol, minSalePrice)
                         x+=1
@@ -610,8 +624,9 @@ const monitorCheckWatchlist = ()=>{
             // if there are, we'll make sure there's at least 
             // 10 orders out there by adding some buy orders
             console.log(el)
-            if (el.length > 1 && el.length< 11){
-                for (let i = 10 - el.length; i<=el.length; i++){
+            if (el.length > 1 && el.length< 6){
+                // if there are some but less than 10, we'll go ahead and fill that difference to 10
+                for (let i = 1; i<=10-el.length; i++){
                     // console.log(i)
                     sleep(1000).then(()=>{
                         createBuyLimits(el[0], (parseFloat(el[el.length-1].limit_price)-0.01*i).toString())
@@ -629,34 +644,6 @@ const monitorCheckWatchlist = ()=>{
     }).catch((err)=>{
         console.log(err)
     })
-    
-    // for (const symbol of watchList){
-    //     checkOrdersBySymbol(symbol)
-    //     .then((response)=>{
-    //         console.log("Response from checkOrdersBySymbol inside monitorCheckWatchlist:")
-    //         console.log(response)
-    //         if (response.length === 0){
-    //             arr.push(symbol)
-    //         // if there are some but less than 10, we'll go ahead and fill that difference to 10
-    //         } else if (response.length > 0 && response.length < 10){
-    //             console.log(response.length)
-    //             for (let x = 10 - response.length; x <= response.length; x++){
-    //                 // this next line could result in orders that go too far down or possibly 
-    //                 // doubling up shares on certain prices, depending on how the first element
-    //                 // is decided in the array that comes from alpaca regarding orders
-    //                 console.log(x)
-    //                 createBuyLimits(symbol, response[0].limit_price-0.01*x) 
-    //             }
-    //         }
-    //         console.log(arr)
-    //     })
-    //     .catch((err)=>{
-    //         console.log(err)
-    //         return err
-    //     })
-    // }
-    // console.log(arr)
-
 }
 
 const monitor = (status)=>{
@@ -846,7 +833,7 @@ const getWatchlist = (str)=>{
                 default:
                     break;
             }
-            dynamicHtml = `<li class="watch-item"><span class="watch-symbol">${str}</span>`
+            dynamicHtml = `<li class="watch-item"><span class="watch-symbol">${watchListCounter}. ${str}</span>`
             dynamicHtml += `<span class="watch-price">${current}</span>`
             dynamicHtml += `<span class="watch-7d">${el7d}</span>`
             dynamicHtml += `<span class="watch-14d">${el14d}</span>`
@@ -855,6 +842,7 @@ const getWatchlist = (str)=>{
             // console.log(dynamicHtml)
             x++
         })
+        watchListCounter++
         renderWatchlist(dynamicHtml)
     }).catch(err=>{
         console.log(err)

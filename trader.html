@@ -57,7 +57,15 @@
                 </ul>
             </div>
             <div class="orders">
-                <h2>Orders</h2>
+                <div class="orders-header">
+                    <h2>Orders</h2>
+                    <div class="orders-filters">
+                        <label class="order-filter-labels" for="show-both-orders"><input type="radio" name="filter-orders" id="show-both-orders" value="both" checked> Show Both Orders</label>
+                        <label class="order-filter-labels" for="show-buy-orders"><input type="radio" name="filter-orders" id="show-buy-orders" value="buy"> Show Buy Orders</label>
+                        <label class="order-filter-labels" for="show-sell-orders"><input type="radio" name="filter-orders" id="show-sell-orders" value="sell"> Show Sell Orders</label>
+                    </div>
+                    
+                </div>
                 <ul class="orders-list">
                     <li class="column-headers">
                         <p>Symbol</p>

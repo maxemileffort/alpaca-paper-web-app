@@ -22,6 +22,8 @@ let marketOpen = false;
 let watchList = [];
 let watchListCounter = 1;
 
+let recent500Orders = []; // made accessible here to keep from having to call the API over and over again
+
 // API functions
 // GET functions
 const getAccount = ()=>{
@@ -107,6 +109,7 @@ const checkOrders = ()=>{
             // returns array of objects
             // console.log("Check Orders:")
             // console.log(response)
+            recent500Orders = response
             let ordersHtml = `
                 <li class="column-headers">
                     <p>Symbol</p>
@@ -138,6 +141,42 @@ const checkOrders = ()=>{
         }).catch(()=>{reject("Failed to check orders.")})
         
     })
+}
+
+const filterOrders = (str)=>{
+    let ordersHtml = `
+    <li class="column-headers">
+        <p>Symbol</p>
+        <p>Side</p>
+        <p>Price</p>
+        <p>Shares</p>
+        <p>Cancel</p>
+    </li>
+    `
+    if(str !== 'both'){
+        recent500Orders.forEach(el=>{
+            let symbol = el.symbol;
+            let side = el.side.toUpperCase();
+            let price = el.limit_price;
+            let qty = el.qty;
+            let id = el.id;
+            if (side === str.toUpperCase()){
+                let htmlToAppend = `
+                <li class="order">
+                <span class="order-symbol">${symbol}</span>
+                <span class="order-side">${side}</span>
+                <span class="order-price">${price}</span>
+                <span class="order-shares">${qty}</span>
+                <span class="order-cancel id-${id}">X</span>
+                </li>
+                `
+                ordersHtml = ordersHtml + htmlToAppend;
+            }
+        })
+        $('.orders-list').html(ordersHtml);
+    } else {
+        checkOrders()
+    }
 }
 
 const checkOrdersBySymbol = (str)=>{
@@ -1076,6 +1115,13 @@ $(".research-query").on("submit", (e)=>{
             // each data point, and a chart with the symbol on top
         })
     })
+})
+
+$("input[type='radio']").on("change", (e)=>{
+    console.log(e)
+    let checkedRadio = $(".orders-filters").find('input:checked').val()
+    console.log(checkedRadio)
+    filterOrders(checkedRadio)
 })
 
 pageLoad();

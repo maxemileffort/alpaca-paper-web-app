@@ -57,6 +57,7 @@ button, input[type='submit'] {
     padding: 10px;
     cursor: pointer;
     transition: 0.3s;
+    height: 60px;
 }
 
 button:hover, input[type='submit']:hover {
@@ -147,6 +148,24 @@ span{
     margin: 1% auto;
     width: 80%;
     text-align: center;
+    
+}
+
+.monitor-buttons {
+    display: flex;
+    justify-content: space-between;
+}
+
+.watchlist-checkbox{
+    cursor: pointer;
+    margin: 10px 10px 10px 10px;
+    padding: 10px 0;
+    width: 150%;
+}
+
+.toggle-monitor{
+    width: 100%;
+    margin: 1% 10px 1% -10px;
 }
 
 .watch-item-remove, .order-cancel, .position-cancel {

@@ -2,10 +2,12 @@
 // equity chart, EOD csv
 // websocket, research symbols
 
+// from config.js
 const apiKey = keys.apiKey;
 const secretKey = keys.secretKey;
 const AVKey = keys.alphaVantage;
 
+// for http requests
 const baseUrl = 'https://paper-api.alpaca.markets';
 const ordersUrl = `${baseUrl}/v2/orders`;
 const positionsUrl = `${baseUrl}/v2/positions`;
@@ -18,11 +20,15 @@ const headers = {
 // for monitor function
 let toggle = "off";
 let marketOpen = false;
+let monitorFromWatchlist = true;
 
+// for watchlist monitoring
 let watchList = [];
 let watchListCounter = 1;
 
+// for order filtering
 let recent500Orders = []; // made accessible here to keep from having to call the API over and over again
+let checkedRadio = $(".orders-filters").find('input:checked').val()
 
 // API functions
 // GET functions
@@ -65,6 +71,8 @@ const getTradeHistory = ()=>{
                 
             }
         })
+        // function that counts # of instances of each sell side order that was filled.
+        // catalogs each symbol and how many times it sold.
         function counter(arr) {
             var a = [], b = [], prev;
             
@@ -82,11 +90,13 @@ const getTradeHistory = ()=>{
             return [a, b];
         }
         let instances = counter(tradeHistoryArray)
+        // array that comes back is [<symbol>, <# of sell orders fulfilled>]
         let symbols = instances[0]
         let ordersFilled = instances[1]
         for (let j = 0; j < symbols.length; j++){
             tradeHistoryHtml += `<br><p class="tradeHistoryItem"><span class="tradeHistoryButton">${symbols[j]}</span> filled ${ordersFilled[j]}.</p>`
-            if (ordersFilled[j] > 6){
+            // we want symbols that are filling at least 8 out of the 10 orders we ping
+            if (ordersFilled[j] > 8){
                 watchList.push(symbols[j])
             }
         }
@@ -383,7 +393,7 @@ const createSellLimits = (sym, price)=>{
     }).then(function (response){
         // returns object
         console.log("Create sells:")
-        console.log(response)
+        console.log(response.symbol)
     })
 }
 
@@ -508,7 +518,7 @@ const sellPositionBySymbol = (symbol)=>{
 // non-API functions
 const pageLoad = ()=>{
     getAccount();
-    checkOrders();
+    filterOrders(checkedRadio);
     checkPositions();
 }
 
@@ -690,7 +700,12 @@ const monitor = (status)=>{
         // first check open positions and create sell orders if needed
         monitorCheckPositions();
         // then check watchlist and open buy orders if there aren't any open now
-        monitorCheckWatchlist();
+        if (monitorFromWatchlist){
+            console.log("Checking watchlist...")
+            monitorCheckWatchlist();
+        } else {
+            console.log("Not Checking watchlist.")
+        }
     } else if (status === "off"){
         clearTimeout(timeoutId)
         return false
@@ -1117,11 +1132,16 @@ $(".research-query").on("submit", (e)=>{
     })
 })
 
+// filters for order section
 $("input[type='radio']").on("change", (e)=>{
     console.log(e)
-    let checkedRadio = $(".orders-filters").find('input:checked').val()
+    checkedRadio = $(".orders-filters").find('input:checked').val()
     console.log(checkedRadio)
     filterOrders(checkedRadio)
+})
+
+$( "input[type=checkbox]" ).on( "change", (e)=>{
+    monitorFromWatchlist = e.target.checked
 })
 
 pageLoad();

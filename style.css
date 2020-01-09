@@ -41,6 +41,10 @@ li {
     padding: 5px 10px;
 }
 
+svg{
+    margin: 10px;
+}
+
 input[type='text'] {
     width: 60%;
     border: 1px #444 solid;

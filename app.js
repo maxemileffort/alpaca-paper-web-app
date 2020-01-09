@@ -932,22 +932,28 @@ $(document).on("click", ".new-ping", function(){
             Ping Created for ${symbol}.
             `)
             $(".buttons").html(`
-            <h2>Controls</h2>
+        <h2>Controls</h2>
+                <div class="monitor-buttons">
+                    <button class="toggle-monitor">Toggle Monitor</button>
+                    <label class="watchlist-checkbox" for="monitor-from-watchlist"><input type="checkbox" name="monitor-from-watchlist" id="monitor-from-watchlist" checked> - Monitor from watchlist?</label>
+                </div>
                 <button class="new-ping">New Ping</button>
-                <button class="toggle-monitor">Toggle Monitor</button>
                 <button class="clear-pending">Clear Pending Orders</button>
                 <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
-            `)
+        `)
             createOrder(arr)
         }
         else {
             $(".buttons").html(`
-            <h2>Controls</h2>
-            <button class="new-ping">New Ping</button>
-            <button class="toggle-monitor">Toggle Monitor</button>
-            <button class="clear-pending">Clear Pending Orders</button>
-            <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
-            `)
+        <h2>Controls</h2>
+                <div class="monitor-buttons">
+                    <button class="toggle-monitor">Toggle Monitor</button>
+                    <label class="watchlist-checkbox" for="monitor-from-watchlist"><input type="checkbox" name="monitor-from-watchlist" id="monitor-from-watchlist" checked> - Monitor from watchlist?</label>
+                </div>
+                <button class="new-ping">New Ping</button>
+                <button class="clear-pending">Clear Pending Orders</button>
+                <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
+        `)
             $(".status-msg").html(`
                 No New Pings Created.
             `)
@@ -957,10 +963,13 @@ $(document).on("click", ".new-ping", function(){
     $(".cancel-ping").on("click", function(){
         $(".buttons").html(`
         <h2>Controls</h2>
-        <button class="new-ping">New Ping</button>
-        <button class="toggle-monitor">Toggle Monitor</button>
-        <button class="clear-pending">Clear Pending Orders</button>
-        <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
+                <div class="monitor-buttons">
+                    <button class="toggle-monitor">Toggle Monitor</button>
+                    <label class="watchlist-checkbox" for="monitor-from-watchlist"><input type="checkbox" name="monitor-from-watchlist" id="monitor-from-watchlist" checked> - Monitor from watchlist?</label>
+                </div>
+                <button class="new-ping">New Ping</button>
+                <button class="clear-pending">Clear Pending Orders</button>
+                <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
         `)
         $(".status-msg").html(`
             No New Pings Created.
@@ -995,24 +1004,30 @@ $(document).on("click", ".clear-pending-symbol", function(){
             Deleting all orders for ${symbol}.
             `)
             $(".buttons").html(`
-            <h2>Controls</h2>
+        <h2>Controls</h2>
+                <div class="monitor-buttons">
+                    <button class="toggle-monitor">Toggle Monitor</button>
+                    <label class="watchlist-checkbox" for="monitor-from-watchlist"><input type="checkbox" name="monitor-from-watchlist" id="monitor-from-watchlist" checked> - Monitor from watchlist?</label>
+                </div>
                 <button class="new-ping">New Ping</button>
-                <button class="toggle-monitor">Toggle Monitor</button>
                 <button class="clear-pending">Clear Pending Orders</button>
                 <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
-            `)
+        `)
             arr.forEach((el)=>{
                 deleteOrdersBySymbol(el)
             })
         }
         else {
             $(".buttons").html(`
-            <h2>Controls</h2>
-            <button class="new-ping">New Ping</button>
-            <button class="toggle-monitor">Toggle Monitor</button>
-            <button class="clear-pending">Clear Pending Orders</button>
-            <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
-            `)
+        <h2>Controls</h2>
+                <div class="monitor-buttons">
+                    <button class="toggle-monitor">Toggle Monitor</button>
+                    <label class="watchlist-checkbox" for="monitor-from-watchlist"><input type="checkbox" name="monitor-from-watchlist" id="monitor-from-watchlist" checked> - Monitor from watchlist?</label>
+                </div>
+                <button class="new-ping">New Ping</button>
+                <button class="clear-pending">Clear Pending Orders</button>
+                <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
+        `)
             $(".status-msg").html(`
                 No Orders Deleted.
             `)
@@ -1022,29 +1037,18 @@ $(document).on("click", ".clear-pending-symbol", function(){
     $(".cancel-delete").on("click", function(){
         $(".buttons").html(`
         <h2>Controls</h2>
-        <button class="new-ping">New Ping</button>
-        <button class="toggle-monitor">Toggle Monitor</button>
-        <button class="clear-pending">Clear Pending Orders</button>
-        <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
+                <div class="monitor-buttons">
+                    <button class="toggle-monitor">Toggle Monitor</button>
+                    <label class="watchlist-checkbox" for="monitor-from-watchlist"><input type="checkbox" name="monitor-from-watchlist" id="monitor-from-watchlist" checked> - Monitor from watchlist?</label>
+                </div>
+                <button class="new-ping">New Ping</button>
+                <button class="clear-pending">Clear Pending Orders</button>
+                <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
         `)
         $(".status-msg").html(`
             No Orders Deleted.
         `)
     })
-})
-
-$(document).on("click", ".menu-link", function(e){
-    e.preventDefault();
-    let test = e.currentTarget.className.includes("active-link");
-    // console.log(test);
-    if(test){return}
-    else{
-        $(".active-link").removeClass("active-link");
-        $(e.currentTarget).addClass("active-link")
-        $('html, body').animate({
-            scrollTop: $($.attr(this, 'href')).offset().top
-        }, 500);
-    }
 })
 
 $(document).on("click", ".refresh", function(){
@@ -1057,9 +1061,9 @@ $(document).on("click", ".position-cancel", function(e){
     deleteOrdersBySymbol(symbol);
     sleep(100).then(()=>{
         sellPositionBySymbol(symbol);
-    })
-    sleep(100).then(()=>{
-        pageLoad()
+        sleep(100).then(()=>{
+            pageLoad()
+        })
     })
 })
 
@@ -1115,8 +1119,23 @@ $(".research-query").on("submit", (e)=>{
     e.preventDefault();
     let symbol = $("#symbol-query").val().toUpperCase().replace(/\s/g, "");
     let arr = symbol.split(',')
-    arr.forEach((el)=>{
-        let url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${el}&apikey=${AVKey}`
+    
+    // always reload the form and header part
+    $("#research").html(`
+    <h2>Research</h2>
+    <form class="research-query" action="#" method="post">
+        <label for="symbol-query">Symbol to Research:</label>
+        <br>
+        <br>
+        <p>You can separate multiple symbols by commas.</p>
+        <br>
+        <input type="text" name="symbol-query" id="symbol-query">
+        <input type="submit" value="Submit">
+    </form>`)
+
+    const ajaxCall = (string)=>{
+        let researchToAppend;
+        let url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${string.toUpperCase()}&apikey=${AVKey}`
         $.ajax({
             method: 'GET',
             url: url,
@@ -1128,8 +1147,70 @@ $(".research-query").on("submit", (e)=>{
             // returns object of objects where keys are dates, so they
             // are dynamic. Need to loop through them and display the date,
             // each data point, and a chart with the symbol on top
+            let researchArray = Object.entries(response["Time Series (Daily)"])
+            for (let day of researchArray){
+                console.log(day)
+                let date = day[0]
+                let open = day[1]["1. open"]
+                let high = day[1]["2. high"]
+                let low = day[1]["3. low"]
+                let close = day[1]["4. close"]
+                let volume = day[1]["5. volume"]
+                console.log(typeof(open))
+                researchToAppend = `<br>
+                <p>For ${string.toUpperCase()} on ${date}, here were the stats:</p>
+                <p>open: ${open}</p>
+                <p>high: ${high}</p>
+                <p>low: ${low}</p>
+                <p>close: ${close}</p>
+                <p>volume: ${volume}</p>
+                <svg class="date-${date}"></svg>
+                `
+                // append actual research to research section
+                $("#research").append(researchToAppend)
+                // create graph in the above svg element
+                createBarGraph(date, open, high, low, close)
+            }
         })
+    }
+
+    const createBarGraph = (date, open, high, low, close)=>{
+        // everything passed in is a string, so turn them all into numbers first
+        let openNum = parseFloat(open)
+        let highNum = parseFloat(high)
+        let lowNum = parseFloat(low)
+        let closeNum = parseFloat(close)
+        let dataSet = [openNum, highNum, lowNum, closeNum];
+        // setup chart
+        const graph = d3.select(`.date-${date}`)
+                        .attr("width", 500)
+                        .attr('height', 100);
+        // bind data
+        const bars = graph.selectAll('rect')
+                          .data(dataSet)
+                          .enter()
+                          .append('rect');
+        // style graph
+        bars.attr("x", (d, i) => 75 + i * 100)
+            .attr("y", (d, i) => 100 - 3 * d)
+            .attr("width", 40)
+            .attr("height", (d, i) => 3 * d)
+            .attr('fill', '#5FCF80')
+       
+        // add labels
+        bars.selectAll("text")
+            .data(dataSet)
+            .enter()
+            .append("text")
+            .text((d) => d.toFixed())
+            .attr("x", (d, i) => 75 + i * 100)
+            .attr("y", (d, i) => 100 - (3 * d) - 10)
+    }
+
+    arr.forEach((el)=>{
+        ajaxCall(el)
     })
+    
 })
 
 // filters for order section

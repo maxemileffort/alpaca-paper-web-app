@@ -24,7 +24,7 @@ let monitorFromWatchlist = false;
 
 // for watchlist monitoring
 let watchList = [];
-
+let watchListCounter = 1;
 
 // for order filtering
 let recent500Orders = []; // made accessible here to keep from having to call the API over and over again
@@ -100,8 +100,12 @@ const getTradeHistory = ()=>{
                 watchList.push(symbols[j])
             }
         }
-        $(".trade-history").html(tradeHistoryHtml)
-        (monitorFromWatchlist) ? createWatchlist(watchList) : console.log("skipping watchlist")
+        $(".trade-history").html(tradeHistoryHtml);
+        if (monitorFromWatchlist) {
+            createWatchlist(watchList) 
+        } else {
+            console.log("skipping watchlist")
+        }
     }).catch((err)=>{
         console.log(err)
         return err
@@ -284,7 +288,7 @@ const checkPositionsBySymbol = (symbol)=>{
             }).catch(function(err){
                 console.log(err)
                 if (err.status === 404){
-                    $(".status-msg").html("Position does not exist.").addClass("red-text")
+                    $(".status-msg").prepend("Position does not exist.<br>")
                 }
                 return err
             })
@@ -580,7 +584,7 @@ const marketOpenCheck = ()=>{
     // check day
     if(day === "Saturday" || day === "Sunday"){
         marketOpen = false;
-        $(".status-msg").html("<h1>Market is Closed today!</h1>")
+        $(".status-msg").prepend("<h2>Market is Closed today!</h2><br>")
         // check every 6 hours to see what day it is
         setTimeout(marketOpenCheck, 2.16e7)
         // if day is ok, check the time every minute
@@ -598,7 +602,7 @@ const marketOpenCheck = ()=>{
         } else {
             marketOpen = false;
             monitor("off")
-            $(".status-msg").html("<h1>Market is Closed right now!</h1>")
+            $(".status-msg").prepend("<h2>Market is Closed right now!</h2><br>")
             sleep(60000).then(()=>{
                 marketOpenCheck()
             })
@@ -821,9 +825,14 @@ const createWatchlist = (arr)=>{
             </li>
         </ul>
     `)
+
+    // reset the counter to 1 so that they don't all equal 1 and also don't keep counting
+    // every time watchlist is refreshed
+    watchListCounter = 1;
+
     if (watchList.length > 5){
         var i = 0;                     //  set your counter to 0
-
+        
         function watchLoop () {           //  create a loop function
             setTimeout(function () {    //  call a 3s setTimeout when the loop is called
                 getWatchlist(arr[i]);          //  your code here
@@ -852,7 +861,6 @@ const createWatchlist = (arr)=>{
 
 const getWatchlist = (str)=>{
     let dynamicHtml;
-    let watchListCounter = 1;
     let x = 1;
     let el7d, el14d, el28d, current;
     let high, low, open, close;
@@ -871,7 +879,7 @@ const getWatchlist = (str)=>{
             close = parseFloat(stock[1]["4. close"])
             let avg = (high + low + open + close) / 4
             avg = avg.toFixed(2)
-            console.log(`${str} had an avg of ${avg} ${x} day(s) ago.`)
+            // console.log(`${str} had an avg of ${avg} ${x} day(s) ago.`)
             switch(x){
                 case 1:
                     current = avg
@@ -929,8 +937,8 @@ $(document).on("click", ".new-ping", function(){
         // watchList.push(symbol);
         // renderWatchlist();
         if (arr){
-            $(".status-msg").html(`
-            Ping Created for ${symbol}.
+            $(".status-msg").prepend(`
+            Ping Created for ${symbol}.<br>
             `)
             $(".buttons").html(`
         <h2>Controls</h2>
@@ -955,8 +963,8 @@ $(document).on("click", ".new-ping", function(){
                 <button class="clear-pending">Clear Pending Orders</button>
                 <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
         `)
-            $(".status-msg").html(`
-                No New Pings Created.
+            $(".status-msg").prepend(`
+                No New Pings Created.<br>
             `)
         }
     })
@@ -972,8 +980,8 @@ $(document).on("click", ".new-ping", function(){
                 <button class="clear-pending">Clear Pending Orders</button>
                 <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
         `)
-        $(".status-msg").html(`
-            No New Pings Created.
+        $(".status-msg").prepend(`
+            No New Pings Created.<br>
         `)
     })
 })
@@ -1001,8 +1009,8 @@ $(document).on("click", ".clear-pending-symbol", function(){
         // watchList.push(symbol);
         // renderWatchlist();
         if (arr){
-            $(".status-msg").html(`
-            Deleting all orders for ${symbol}.
+            $(".status-msg").prepend(`
+            Deleting all orders for ${symbol}.<br>
             `)
             $(".buttons").html(`
         <h2>Controls</h2>
@@ -1029,8 +1037,8 @@ $(document).on("click", ".clear-pending-symbol", function(){
                 <button class="clear-pending">Clear Pending Orders</button>
                 <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
         `)
-            $(".status-msg").html(`
-                No Orders Deleted.
+            $(".status-msg").prepend(`
+                No Orders Deleted.<br>
             `)
         }
     })
@@ -1046,8 +1054,8 @@ $(document).on("click", ".clear-pending-symbol", function(){
                 <button class="clear-pending">Clear Pending Orders</button>
                 <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
         `)
-        $(".status-msg").html(`
-            No Orders Deleted.
+        $(".status-msg").prepend(`
+            No Orders Deleted.<br>
         `)
     })
 })
@@ -1084,7 +1092,11 @@ $(document).on("click", ".tradeHistoryButton", function(e){
     console.log(check)
     if (check === false){
         watchList.push(text)
-        (monitorFromWatchlist) ? createWatchlist(watchList) : console.log("skipping watchlist")
+        if (monitorFromWatchlist) {
+            createWatchlist(watchList) 
+        } else {
+            console.log("skipping watchlist")
+        }
     }
 })
 
@@ -1092,27 +1104,31 @@ $(document).on("click", ".watch-remove", function(e){
     let text = e.currentTarget.parentNode.firstElementChild.innerText
     let query = watchList.indexOf(text)
     watchList.splice(query, 1)
-    (monitorFromWatchlist) ? createWatchlist(watchList) : console.log("skipping watchlist")
+    if (monitorFromWatchlist) {
+        createWatchlist(watchList) 
+    } else {
+        console.log("skipping watchlist")
+    }
 })
 
 $(document).on("click", ".toggle-monitor", function(){
     //     if(toggle === "off"){
     //         streamTrades("on");
     //         toggle = "on";
-    //         $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
+    //         $(".status-msg").prepend("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
     //     } else if (toggle === "on"){
     //         streamTrades("off");
     //         toggle = "off"
-    //         $(".status-msg").html("<h1>Monitor paused. Click that same button again to resume.</h1>")
+    //         $(".status-msg").prepend("<h1>Monitor paused. Click that same button again to resume.</h1>")
     //     }
     if(toggle === "off"){
         toggle = "on";
         marketOpenCheck();
-        $(".status-msg").html("<h1>Monitor Initiated. Don't close or refresh the window. Just... don't touch anything. ANYTHING.")
+        $(".status-msg").prepend("<h2>Monitor Initiated. Don't close or refresh the window.</h2><br>")
     } else if (toggle === "on"){
         toggle = "off"
         marketOpenCheck();
-        $(".status-msg").html("<h1>Monitor paused. Click that same button again to resume.</h1>")
+        $(".status-msg").prepend("<h2>Monitor paused. Click that same button again to resume.</h2><br>")
     }
 })
 
@@ -1136,30 +1152,19 @@ $(".research-query").on("submit", (e)=>{
     
 
     const createBarGraph = (string, url)=>{
-        // everything passed in is a string, so turn them all into numbers first
-        // console.log(data)
-        // let metaData = data["Meta Data"]
-        // let priceData = data["Time Series (Daily)"]
-        // console.log("Here's Meta Data:")
-        // console.log(metaData)
-        // console.log("Here's Price Data:")
-        // console.log(priceData)
         // setup chart: borrowed heavily from https://gist.github.com/ColinEberhardt/7069875cf9c028b4d824c6a7b8ad8142
         // a candlestick series, by default it expects the provided data to have open, low, high, close, date properties
         const candlestickSeries = fc.seriesSvgCandlestick()
         .bandwidth(2);
 
-        // adapt the d3 time scale to add discontinuities, so that weekends are removed
-        const xScale = fc.scaleDiscontinuous(d3.scaleTime())
-        .discontinuityProvider(fc.discontinuitySkipWeekends());
-
+        // data already skips weekends, so no need to do that with code, just run scale time
         const chart = fc.chartCartesian(
         d3.scaleTime(),
         d3.scaleLinear()
         )
         .yOrient('left')
         .svgPlotArea(candlestickSeries)
-        .chartLabel(string);
+        .chartLabel("Previous 100 days of OHLC for "+ string);
 
         // use the extent component to determine the x and y domain
         const xExtent = fc.extentDate()
@@ -1209,7 +1214,11 @@ $("input[type='radio']").on("change", (e)=>{
 
 $( "input[type=checkbox]" ).on( "change", (e)=>{
     monitorFromWatchlist = e.target.checked
-    (monitorFromWatchlist) ? createWatchlist(watchList) : console.log("skipping watchlist")
+    if (monitorFromWatchlist) {
+        createWatchlist(watchList) 
+    } else {
+        console.log("skipping watchlist")
+    }
 })
 
 pageLoad();

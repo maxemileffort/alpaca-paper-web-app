@@ -20,11 +20,11 @@ const headers = {
 // for monitor function
 let toggle = "off";
 let marketOpen = false;
-let monitorFromWatchlist = true;
+let monitorFromWatchlist = false;
 
 // for watchlist monitoring
 let watchList = [];
-let watchListCounter = 1;
+
 
 // for order filtering
 let recent500Orders = []; // made accessible here to keep from having to call the API over and over again
@@ -101,7 +101,7 @@ const getTradeHistory = ()=>{
             }
         }
         $(".trade-history").html(tradeHistoryHtml)
-        createWatchlist(watchList)
+        (monitorFromWatchlist) ? createWatchlist(watchList) : console.log("skipping watchlist")
     }).catch((err)=>{
         console.log(err)
         return err
@@ -852,6 +852,7 @@ const createWatchlist = (arr)=>{
 
 const getWatchlist = (str)=>{
     let dynamicHtml;
+    let watchListCounter = 1;
     let x = 1;
     let el7d, el14d, el28d, current;
     let high, low, open, close;
@@ -1083,7 +1084,7 @@ $(document).on("click", ".tradeHistoryButton", function(e){
     console.log(check)
     if (check === false){
         watchList.push(text)
-        createWatchlist(watchList)
+        (monitorFromWatchlist) ? createWatchlist(watchList) : console.log("skipping watchlist")
     }
 })
 
@@ -1091,7 +1092,7 @@ $(document).on("click", ".watch-remove", function(e){
     let text = e.currentTarget.parentNode.firstElementChild.innerText
     let query = watchList.indexOf(text)
     watchList.splice(query, 1)
-    createWatchlist(watchList)
+    (monitorFromWatchlist) ? createWatchlist(watchList) : console.log("skipping watchlist")
 })
 
 $(document).on("click", ".toggle-monitor", function(){
@@ -1132,83 +1133,68 @@ $(".research-query").on("submit", (e)=>{
         <input type="text" name="symbol-query" id="symbol-query">
         <input type="submit" value="Submit">
     </form>`)
+    
 
-    const ajaxCall = (string)=>{
-        let researchToAppend;
-        let url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${string.toUpperCase()}&apikey=${AVKey}`
-        $.ajax({
-            method: 'GET',
-            url: url,
-            // contentType: 'application/json',
-            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-            dataType: 'json'
-        }).then((response)=>{
-            console.log(response["Time Series (Daily)"])
-            // returns object of objects where keys are dates, so they
-            // are dynamic. Need to loop through them and display the date,
-            // each data point, and a chart with the symbol on top
-            let researchArray = Object.entries(response["Time Series (Daily)"])
-            for (let day of researchArray){
-                console.log(day)
-                let date = day[0]
-                let open = day[1]["1. open"]
-                let high = day[1]["2. high"]
-                let low = day[1]["3. low"]
-                let close = day[1]["4. close"]
-                let volume = day[1]["5. volume"]
-                console.log(typeof(open))
-                researchToAppend = `<br>
-                <p>For ${string.toUpperCase()} on ${date}, here were the stats:</p>
-                <p>open: ${open}</p>
-                <p>high: ${high}</p>
-                <p>low: ${low}</p>
-                <p>close: ${close}</p>
-                <p>volume: ${volume}</p>
-                <svg class="date-${date}"></svg>
-                `
-                // append actual research to research section
-                $("#research").append(researchToAppend)
-                // create graph in the above svg element
-                createBarGraph(date, open, high, low, close)
-            }
-        })
-    }
-
-    const createBarGraph = (date, open, high, low, close)=>{
+    const createBarGraph = (string, url)=>{
         // everything passed in is a string, so turn them all into numbers first
-        let openNum = parseFloat(open)
-        let highNum = parseFloat(high)
-        let lowNum = parseFloat(low)
-        let closeNum = parseFloat(close)
-        let dataSet = [openNum, highNum, lowNum, closeNum];
-        // setup chart
-        const graph = d3.select(`.date-${date}`)
-                        .attr("width", 500)
-                        .attr('height', 100);
-        // bind data
-        const bars = graph.selectAll('rect')
-                          .data(dataSet)
-                          .enter()
-                          .append('rect');
-        // style graph
-        bars.attr("x", (d, i) => 75 + i * 100)
-            .attr("y", (d, i) => 100 - 3 * d)
-            .attr("width", 40)
-            .attr("height", (d, i) => 3 * d)
-            .attr('fill', '#5FCF80')
-       
-        // add labels
-        bars.selectAll("text")
-            .data(dataSet)
-            .enter()
-            .append("text")
-            .text((d) => d.toFixed())
-            .attr("x", (d, i) => 75 + i * 100)
-            .attr("y", (d, i) => 100 - (3 * d) - 10)
+        // console.log(data)
+        // let metaData = data["Meta Data"]
+        // let priceData = data["Time Series (Daily)"]
+        // console.log("Here's Meta Data:")
+        // console.log(metaData)
+        // console.log("Here's Price Data:")
+        // console.log(priceData)
+        // setup chart: borrowed heavily from https://gist.github.com/ColinEberhardt/7069875cf9c028b4d824c6a7b8ad8142
+        // a candlestick series, by default it expects the provided data to have open, low, high, close, date properties
+        const candlestickSeries = fc.seriesSvgCandlestick()
+        .bandwidth(2);
+
+        // adapt the d3 time scale to add discontinuities, so that weekends are removed
+        const xScale = fc.scaleDiscontinuous(d3.scaleTime())
+        .discontinuityProvider(fc.discontinuitySkipWeekends());
+
+        const chart = fc.chartCartesian(
+        d3.scaleTime(),
+        d3.scaleLinear()
+        )
+        .yOrient('left')
+        .svgPlotArea(candlestickSeries)
+        .chartLabel(string);
+
+        // use the extent component to determine the x and y domain
+        const xExtent = fc.extentDate()
+        .accessors([d => d.date]);
+
+        const yExtent = fc.extentLinear()
+        .accessors([d => d.high, d => d.low]);
+
+        const parseDate = d3.timeParse("%Y-%m-%d");
+
+        d3.csv(url,
+        // transform the data to use the default candlestick series properties
+        row => ({
+        open: row.open,
+        close: row.close,
+        high: row.high,
+        low: row.low,
+        date: parseDate(row.timestamp)
+        })).then(data => {
+        // set the domain based on the data
+        chart.xDomain(xExtent(data))
+        .yDomain(yExtent(data))
+
+        // select and render
+        d3.select(`#chart-${string.toUpperCase()}`)
+            .datum(data)
+            .call(chart);
+        });
     }
 
     arr.forEach((el)=>{
-        ajaxCall(el)
+        // create chart area for symbols
+        $("#research").append(`<div class='chart' id='chart-${el.toUpperCase()}'></div>`)
+        let url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${el.toUpperCase()}&apikey=${AVKey}&datatype=csv`
+        createBarGraph(el, url)
     })
     
 })
@@ -1223,6 +1209,7 @@ $("input[type='radio']").on("change", (e)=>{
 
 $( "input[type=checkbox]" ).on( "change", (e)=>{
     monitorFromWatchlist = e.target.checked
+    (monitorFromWatchlist) ? createWatchlist(watchList) : console.log("skipping watchlist")
 })
 
 pageLoad();

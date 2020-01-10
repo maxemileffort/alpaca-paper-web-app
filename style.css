@@ -41,10 +41,6 @@ li {
     padding: 5px 10px;
 }
 
-svg{
-    margin: 10px;
-}
-
 input[type='text'] {
     width: 60%;
     border: 1px #444 solid;
@@ -172,7 +168,7 @@ span{
     margin: 1% 10px 1% -10px;
 }
 
-.watch-item-remove, .order-cancel, .position-cancel {
+.watch-remove, .order-cancel, .position-cancel {
     cursor: pointer;
 }
 
@@ -245,5 +241,15 @@ span{
     cursor: pointer;
     border-radius: 5px;
     padding: 4px;
-    box-shadow: black -1px 1px;
+    box-shadow: black -1px 1px 2px;
+}
+
+.chart{
+    height: 500px;
+}
+
+d3fc-svg>svg {
+    position: initial !important;
+    height: 100%;
+    width: 100%;
 }

@@ -14,10 +14,9 @@ body {
 }
 
 header {
-    margin-bottom: 20px;
-    position: fixed;
-    width: 80%;
-    border-radius: 2%;
+    /* margin-bottom: 20px; */
+    /* position: fixed; */
+    width: 100%;
 }
 
 main, .menu-bar, .buttons {
@@ -90,6 +89,10 @@ span{
     flex-direction: column;
 }
 
+.hidden{
+    display: none !important;
+}
+
 .overview{
     display: flex;
 }
@@ -117,6 +120,7 @@ span{
 .top-bar {
     display: flex;
     background: linear-gradient(0.25turn, #5FCF80 25%, #fff 50%);
+    border-radius: 20px;
 }
 
 .title{

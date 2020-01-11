@@ -1,6 +1,7 @@
 // TODO: 
-// equity chart, EOD csv
-// websocket, research symbols
+// equity chart - needs db, EOD csv - also needs db
+// websocket - seems to be not working on alpaca's end, 
+// split watchlists into "monitor" and "trade"
 
 // from config.js
 const apiKey = keys.apiKey;
@@ -24,6 +25,10 @@ let monitorFromWatchlist = false;
 
 // for watchlist monitoring
 let watchList = [];
+// watchlist for storing just the charts
+let monitorWatchlist = [];
+// watchlist for monitoring trades from
+let tradeWatchlist = [];
 let watchListCounter = 1;
 
 // for order filtering
@@ -40,10 +45,6 @@ const getAccount = ()=>{
         headers: headers
     }).then(function (response){
         // returns object
-        // console.log("Get account:")
-        // console.log(response)
-        // console.log(response.buying_power)
-        // console.log(response.equity)
         let buyingPower = parseFloat(response.buying_power).toLocaleString();
         let equity = parseFloat(response.equity).toLocaleString();
         $('.equity').html(`${equity}`)
@@ -68,7 +69,6 @@ const getTradeHistory = ()=>{
             let qty = el.filled_qty
             if (side === 'sell' && qty > 0){
                 tradeHistoryArray.push(symbol)
-                
             }
         })
         // function that counts # of instances of each sell side order that was filled.
@@ -90,7 +90,7 @@ const getTradeHistory = ()=>{
             return [a, b];
         }
         let instances = counter(tradeHistoryArray)
-        // array that comes back is [<symbol>, <# of sell orders fulfilled>]
+        // array that comes back is [<symbol>, <order fulfilled>, <order fulfilled>...]
         let symbols = instances[0]
         let ordersFilled = instances[1]
         for (let j = 0; j < symbols.length; j++){
@@ -630,7 +630,7 @@ const monitorCheckPositions = ()=>{
                 // immediately cancel orders with negative shares
                 if(shares < 0){
                     deleteOrdersBySymbol(symbol)
-                    sleep(1000).then(()=>{
+                    sleep(250).then(()=>{
                         sellPositionBySymbol(symbol)
                     })
                 } else {
@@ -849,14 +849,8 @@ const createWatchlist = (arr)=>{
             getWatchlist(el)
         })
     }
-    
-
-    // watchList.forEach((el)=>{
-    //     getWatchlist(el)
-    // })
 
     return null
-    
 }
 
 const getWatchlist = (str)=>{

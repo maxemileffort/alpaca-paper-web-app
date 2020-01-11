@@ -1200,12 +1200,26 @@ $(".research-query").on("submit", (e)=>{
 
 // filters for order section
 $("input[type='radio']").on("change", (e)=>{
-    console.log(e)
     checkedRadio = $(".orders-filters").find('input:checked').val()
-    console.log(checkedRadio)
     filterOrders(checkedRadio)
 })
 
+// menu-bar navigation
+$(document).on("click", ".menu-link", function(e){
+    e.preventDefault();
+    if(e.currentTarget.className.includes("active-link")){
+        return
+    } else {
+        let elementToHide = $(".menu-list").find(".active-link").text().toLowerCase().replace(/\s/g, '-')
+        $(".menu-list").find(".active-link").removeClass("active-link");
+        $(e.currentTarget).addClass("active-link");
+        let elementToReveal = e.currentTarget.innerText.toLowerCase().replace(/\s/g, '-');
+        $(`#${elementToHide}`).addClass('hidden')
+        $(`#${elementToReveal}`).removeClass('hidden')
+    }
+})
+
+// turns on watchlist autopilot
 $( "input[type=checkbox]" ).on( "change", (e)=>{
     monitorFromWatchlist = e.target.checked
     if (monitorFromWatchlist) {

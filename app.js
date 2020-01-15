@@ -1,7 +1,8 @@
 // TODO: 
 // equity chart - needs db, EOD csv - also needs db
 // websocket - seems to be not working on alpaca's end, 
-// split watchlists into "monitor" and "trade"
+// split watchlists into "monitor" and "trade",
+// better trade history page
 
 // from config.js
 const apiKey = keys.apiKey;
@@ -32,7 +33,7 @@ let tradeWatchlist = [];
 let watchListCounter = 1;
 
 // for order filtering
-let recent500Orders = []; // made accessible here to keep from having to call the API over and over again
+let allRecent500Orders = []; // made accessible here to keep from having to call the API over and over again
 let checkedRadio = $(".orders-filters").find('input:checked').val()
 
 // API functions
@@ -53,8 +54,9 @@ const getAccount = ()=>{
 }
 
 const getTradeHistory = ()=>{
-    let tradeHistoryArray = []
-    let tradeHistoryHtml = '<h2>Trade History</h2><p> Out of the last 500 trades, here are the sells that filled:</p>'
+    let tradeHistoryArray = [];
+    let tradeHistoryHtml = '<h2>Trade History</h2><p> Out of the last 500 trades, here are the buys & sells that filled:</p>'
+    
     $.ajax({
         method: 'GET',
         url: `${ordersUrl}?status=closed&limit=500`,
@@ -65,11 +67,9 @@ const getTradeHistory = ()=>{
         response.forEach((el)=>{
             // console.log(el)
             let symbol = el.symbol
-            let side = el.side
-            let qty = el.filled_qty
-            if (side === 'sell' && qty > 0){
-                tradeHistoryArray.push(symbol)
-            }
+            // let side = el.side
+            // let qty = el.filled_qty
+            tradeHistoryArray.push(symbol)
         })
         // function that counts # of instances of each sell side order that was filled.
         // catalogs each symbol and how many times it sold.
@@ -89,17 +89,26 @@ const getTradeHistory = ()=>{
             
             return [a, b];
         }
+
         let instances = counter(tradeHistoryArray)
         // array that comes back is [<symbol>, <order fulfilled>, <order fulfilled>...]
-        let symbols = instances[0]
-        let ordersFilled = instances[1]
+        let symbols = instances[0];
+        let ordersFilled = instances[1];
+        let totalNumOrders = 0;
+        
         for (let j = 0; j < symbols.length; j++){
-            tradeHistoryHtml += `<br><p class="tradeHistoryItem"><span class="tradeHistoryButton">${symbols[j]}</span> filled ${ordersFilled[j]}.</p>`
+            tradeHistoryHtml += `<br><p class="tradeHistoryItem">
+            <span class="tradeHistoryButton">${symbols[j]}</span> 
+            filled ${ordersFilled[j]} orders.</p>`
+            totalNumOrders += ordersFilled[j]
             // we want symbols that are filling at least 8 out of the 10 orders we ping
-            if (ordersFilled[j] > 8){
+            if (ordersFilled[j] > 16){
                 watchList.push(symbols[j])
             }
         }
+
+        tradeHistoryHtml += `<br><p>Total Number of Orders filled: ${totalNumOrders}</p>`
+
         $(".trade-history").html(tradeHistoryHtml);
         if (monitorFromWatchlist) {
             createWatchlist(watchList) 
@@ -123,7 +132,7 @@ const checkOrders = ()=>{
             // returns array of objects
             // console.log("Check Orders:")
             // console.log(response)
-            recent500Orders = response
+            allRecent500Orders = response
             let ordersHtml = `
                 <li class="column-headers">
                     <p>Symbol</p>
@@ -168,7 +177,7 @@ const filterOrders = (str)=>{
     </li>
     `
     if(str !== 'both'){
-        recent500Orders.forEach(el=>{
+        allRecent500Orders.forEach(el=>{
             let symbol = el.symbol;
             let side = el.side.toUpperCase();
             let price = el.limit_price;
@@ -245,7 +254,7 @@ const checkPositions = ()=>{
                 let price = el.current_price;
                 let shares = el.qty;
                 let profitLoss = el.unrealized_pl;
-                if (parseFloat(profitLoss) > 50 && marketOpen === true){
+                if (parseFloat(profitLoss) > 100 && marketOpen === true){
                     deleteOrdersBySymbol(symbol)
                     sleep(1000).then(()=>{
                         sellPositionBySymbol(symbol)

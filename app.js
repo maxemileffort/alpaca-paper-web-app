@@ -305,9 +305,10 @@ const checkPositionsBySymbol = (symbol)=>{
 }
 
 // POST functions
-const createOrder = (arr)=>{
-    arr.forEach((el)=>{
-        let url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${el}&apikey=${AVKey}`
+const createPing = (arr)=>{
+
+    function orderBuilder(string){
+        let url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${string}&apikey=${AVKey}`
         $.ajax({
             method: 'GET',
             url: url,
@@ -320,7 +321,7 @@ const createOrder = (arr)=>{
             // else if we are buying, just use current price.
             let workingPrice = parseFloat(firstOrderPrice);
             let data = {
-                'symbol': el,
+                'symbol': string,
                 'qty': 100,
                 'side': "buy",
                 'type': "limit",
@@ -342,7 +343,7 @@ const createOrder = (arr)=>{
                 for (let x=0;x<9;x+=1){
                     let price1 = workingPrice;
                     price1 = price1-(0.01*x)
-                    createBuyLimits(el, price1.toString());
+                    createBuyLimits(string, price1.toString());
                 }
                 pageLoad();
             })
@@ -350,7 +351,67 @@ const createOrder = (arr)=>{
             console.log(err)
             return err
         })
-    })
+    }
+
+    var i = 0;                     
+    function rateLimiter () {          
+        setTimeout(function () {    
+            orderBuilder(arr[i]);          
+            i++;                     
+            if (i < arr.length) {            
+                rateLimiter();             
+            }                        
+        }, 12000)
+    }
+
+    rateLimiter()
+
+
+    // arr.forEach((el)=>{
+    //     let url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${el}&apikey=${AVKey}`
+    //     $.ajax({
+    //         method: 'GET',
+    //         url: url,
+    //         contentType: 'application/json',
+    //         dataType: 'json'
+    //     }).then(function(response){
+    //         console.log(response["Global Quote"]["05. price"]);
+    //         let firstOrderPrice = response["Global Quote"]["05. price"];
+    //         // if we are selling, add a little to current price before starting the process,
+    //         // else if we are buying, just use current price.
+    //         let workingPrice = parseFloat(firstOrderPrice);
+    //         let data = {
+    //             'symbol': el,
+    //             'qty': 100,
+    //             'side': "buy",
+    //             'type': "limit",
+    //             'time_in_force': "gtc",
+    //             "limit_price": workingPrice.toString()
+    //         }
+    //         $.ajax({
+    //             method: 'POST',
+    //             url: `${ordersUrl}`,
+    //             contentType: 'application/json',
+    //             dataType: 'json',
+    //             processData: false,
+    //             data: JSON.stringify(data),
+    //             headers: headers
+    //         }).then(function (response){
+    //             // returns object
+    //             console.log("Create Orders:")
+    //             console.log(response)
+    //             for (let x=0;x<9;x+=1){
+    //                 let price1 = workingPrice;
+    //                 price1 = price1-(0.01*x)
+    //                 createBuyLimits(el, price1.toString());
+    //             }
+    //             pageLoad();
+    //         })
+    //     }).catch((err)=>{
+    //         console.log(err)
+    //         return err
+    //     })
+    // })
 }
 
 const createBuyLimits = (sym, price)=>{
@@ -699,7 +760,7 @@ const monitorCheckWatchlist = ()=>{
             } else if (el.length === 1){
                 console.log(el)
                 sleep(1000).then(()=>{
-                    createOrder(el)
+                    createPing(el)
                 })
             }
         })
@@ -936,12 +997,13 @@ $(document).on("click", ".new-ping", function(){
     
     $(".submit-ping").on("click", function(){
         let symbol = $("#ping-symbol").val().toUpperCase().replace(/\s/g, "");
+        let symbolsForMsg = $("#ping-symbol").val().toUpperCase();
         let arr = symbol.split(',')
         // watchList.push(symbol);
         // renderWatchlist();
         if (arr){
             $(".status-msg").prepend(`
-            Ping Created for ${symbol}.<br>
+            Ping Created for ${symbolsForMsg}.<br>
             `)
             $(".buttons").html(`
         <h2>Controls</h2>
@@ -953,7 +1015,7 @@ $(document).on("click", ".new-ping", function(){
                 <button class="clear-pending">Clear Pending Orders</button>
                 <button class="clear-pending-symbol">Delete All Orders by Symbol</button>
         `)
-            createOrder(arr)
+            createPing(arr)
         }
         else {
             $(".buttons").html(`
